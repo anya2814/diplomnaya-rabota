@@ -13,6 +13,7 @@ int main()
 
     Data objData;
     double* waves = new double[5];
+    double* lopt = new double[5];  // оптическая толщина атмосферы
     double** d = new double* [5];  // коэффициент ослабления потока - первые 100
     for (int i = 0; i < 5; i++) // альбедо однократного рассеяния - 100-200-ые
         d[i] = new double[200]; // делаю для каждой из 100 высот
@@ -24,12 +25,26 @@ int main()
     mass = objData.getM(mass);
     F = objData.getF(F, mass);
     d = objData.getd(d, waves);
+    lopt = objData.lOpt(lopt, d, waves);
 
     ModelPerenosa objModel;
 
     // моделирование процессов переноса
-    objModel.Modelirovanie(mass, F, waves, d);
-
+    objModel.Modelirovanie(mass, F, waves, d, lopt);
+    
+    // вывод в файл вероятности что l больше 
+    std::ofstream out;
+    out.open("L probability.txt");      // открываем файл для записи
+    if (out.is_open())
+    {
+        out.clear();
+        out << "Waves" << '\t' << "Probability" << std::endl;
+        for (int i = 0; i < 5; i++)
+            out << waves[i] << '\t' << objModel.GetL(i)/(kol*1.0) << std::endl;
+    }
+    out.close();
+    
+    delete[]lopt;
     delete[]mass;
     delete[]waves;
     for (int i = 0; i < 2; i++)

@@ -134,19 +134,25 @@ double** Data::getF(double** F, float* mass)
     return F;
 }
 
-/*void Data::writeF(double** F)
-{
-    std::ofstream H;
-    H.open("F.txt");
-    H.clear();
-    if (H.is_open())
+double* Data::lOpt(double* l, double** d, double* waves) {
+    for (int i = 0; i < 5; i++)
+        l[i] = 0;
+    for (int i = 0; i < 5; i++)
+        for (int j = 0; j < 100; j++)
+            l[i] = l[i] + d[i][j];
+    saveLOpt(waves, l);
+    return l;
+}
+
+void Data::saveLOpt(double* waves, double* l) {
+    std::ofstream out;
+    out.open("Optical depth.txt");      // открываем файл для записи
+    if (out.is_open())
     {
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < 4; j++)
-                H << F[i][j] << " ";
-            H << F[i][4];
-            H << std::endl;
-        }
+        out.clear();
+        out << "Waves" << '\t' << "Optical depth" << std::endl;
+        for (int i = 0; i < 5; i++)
+            out << waves[i] << '\t' << l[i] << std::endl;
     }
-    H.close();
-}*/
+    out.close();
+}
