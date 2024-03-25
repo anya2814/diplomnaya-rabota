@@ -202,15 +202,11 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
         xyz[i] = 0;
 
     abc = P1st_point(abc);
-    /*for (int i = 0; i < 3; i++)
-        cout << "abc[" << i << "] = " << abc[i] << endl;*/
 
     for (;;) {
         c = abc[2];
         l = P2length(Lnum, d, xyz[2], abc);
 
-        if ((l < -1) || (l > 1000000))
-            int i = 1;
         if (l == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
@@ -245,8 +241,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
         }
         m = getMa(mass, F, Lnum);
         abc = P7napravl(abc, m);
-        /*for (int i = 0; i < 3; i++)
-            cout << "abc[" << i << "] = " << abc[i] << endl;*/
+0
     }
 
 }
