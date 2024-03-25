@@ -241,7 +241,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
         }
         m = getMa(mass, F, Lnum);
         abc = P7napravl(abc, m);
-0
+
     }
 
 }
@@ -266,9 +266,26 @@ void ModelPerenosa::CountK(int* t)
     std::cout << "Коэффициент поглощений: k3 = " << t[2] / (kol * 1.0) << std::endl;
 }
 
+// вывод результатов в файл
+void ModelPerenosa::OutToFile(double** tBig, double* waves)
+{
+    std::ofstream out;        
+    out.open("Results.txt");      // открываем файл для записи
+    if (out.is_open())
+    {
+        out << "Waves\tKtUpCross\tKtAbsorption\tKtUpCrossWeight" << std::endl;
+        for (int i = 0; i < 5; i++)
+            out << waves[i] << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2] / (kol * 1.0) << std::endl;
+    }
+    out.close();
+}
+
 void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double** d)
 {
     int* t = new int[3];
+    double** tBig = new double* [5];
+    for (int i = 0; i < 5; i++)
+        tBig[i] = new double[3];
     for (int i = 0; i < 5; i++)
     {
         SetSum0();
@@ -284,6 +301,17 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
         std::cout << std::endl;
         std::cout << "Коэффициент пересечения верхней границы с учетом веса: " << GetSumUp() << std::endl;
         std::cout << "Коэффициент пересечения нижней границы с учетом веса: " << GetSumLow() << std::endl << std::endl << std::endl;
+        
+        tBig[i][0] = t[1];
+        tBig[i][1] = t[2];
+        tBig[i][2] = GetSumUp();
+        int o = 0;
     }
+
+    OutToFile(tBig, waves);
+
     delete[]t;
+    for (int i = 0; i < 5; i++)
+        delete[]tBig[i];
+    delete[]tBig;
 }

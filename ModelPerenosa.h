@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <fstream>
 
 // double abc[3] - массив a, b и с
 // double xyz[3] - массив x, y, z
@@ -26,6 +27,7 @@ class ModelPerenosa
     bool P5type(int Lnum, double** d, double* xyz);                      // выбор типа столкновения (поглощение или рассеяние)
     double* P7napravl(double* abc, double m);      // пересчет координат направления пробега
     void Cout_xyz(double* xyz);
+    void OutToFile(double** tBig, double* waves);
 
 public:
     double GetSumUp();
