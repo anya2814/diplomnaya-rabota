@@ -91,8 +91,8 @@ double* ModelPerenosa::P1st_point(double* abc) {
     while (abc[2] == 0) {
         temp = GetFi(temp);
         abc[0] = 0;
-        abc[1] = temp[0];
-        abc[2] = temp[1];
+        abc[1] = 0;
+        abc[2] = 1;
     };
     delete[]temp;
     
@@ -100,20 +100,20 @@ double* ModelPerenosa::P1st_point(double* abc) {
 }
 
 // выбор длины свободного пробега l
-double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, double* lopt) {
-    int curr_ht = z / 1;        // слой в котором находится частица
+double ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, double* lopt) {
+    int curr_ht = xyz[2] / 1;        // слой в котором находится частица
     double a = GetA(), l;
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
-    double c = abc[2];          // косинус угла к поверхности Земли
+    double c = 1;          // косинус угла к поверхности Земли
 
-    if ((ln_prev > lopt[Lnum]) && (z==0)) 
+    if ((ln_prev > lopt[Lnum]) && (xyz[0]==0) && (xyz[1] == 0) && (xyz[2] == 0))
         Lcount(Lnum);
 
     if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
 
     if (c < 0) {
         // первый слой
-        l = (z - curr_ht * 1.0) / abs(c);
+        l = (xyz[2] - curr_ht * 1.0) / abs(c);
         ln_new = ln_prev - l * d[Lnum][curr_ht];
 
         if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
@@ -135,7 +135,7 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
 
     else {
         // первый слой
-        l = ((curr_ht * 1.0 + 1) - z) / c;
+        l = ((curr_ht * 1.0 + 1) - xyz[2]) / c;
         ln_new = ln_prev - l * d[Lnum][curr_ht];
         if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
         l_sum += l;
@@ -221,7 +221,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double*
 
     for (;;) {
         c = abc[2];
-        l = P2length(Lnum, d, xyz[2], abc, lopt);
+        l = P2length(Lnum, d, xyz, abc, lopt);
 
         if (l == -1)
         {

@@ -23,7 +23,7 @@ class ModelPerenosa
     void CrossLow(double add);         // учет пересечений нижней площадки с весом 1/|(ns, w)|
     void Lcount(int waveNum);          // подсчет сколько раз длина больше оптической толщины атмосферы для данной длины
     double* P1st_point(double* abc);      // выбор начальной точки соответственно плотности распределения источника
-    double P2length(int Lnum, double** d, double z, double* abc, double* lopt);                   // выбор длины свободного пробега l
+    double P2length(int Lnum, double** d, double* xyz, double* abc, double* lopt);                   // выбор длины свободного пробега l
     double* P3P4calcul(double*, double*, double, double);   // проверка вылета из среды, вычисление координат очередной точки столкновения
     bool P5type(int Lnum, double** d, double* xyz);                      // выбор типа столкновения (поглощение или рассеяние)
     double* P7napravl(double* abc, double m);      // пересчет координат направления пробега
