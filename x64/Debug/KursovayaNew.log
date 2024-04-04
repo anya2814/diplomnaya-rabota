@@ -1,5 +1,5 @@
-﻿  ModelPerenosa.cpp
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(93,17): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(161,17): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(141): warning C4715: ModelPerenosa::P2length: значение возвращается не при всех путях выполнения
+﻿  Data.cpp
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(40,28): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(55,28): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(83,26): warning C4244: =: преобразование "double" в "float", возможна потеря данных
   KursovayaNew.vcxproj -> C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\x64\Debug\KursovayaNew.exe
