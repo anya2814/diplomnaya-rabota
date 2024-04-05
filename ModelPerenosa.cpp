@@ -100,13 +100,13 @@ double* ModelPerenosa::P1st_point(double* abc) {
 }
 
 // выбор длины свободного пробега l
-double ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, double* lopt) {
+double ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, double* lopt, bool f) {
     int curr_ht = xyz[2] / 1;        // слой в котором находится частица
     double a = GetA(), l;
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
-    double c = 1;          // косинус угла к поверхности Земли
+    double c = abc[2];          // косинус угла к поверхности Земли
 
-    if ((ln_prev > lopt[Lnum]) && (xyz[0]==0) && (xyz[1] == 0) && (xyz[2] == 0))
+    if ((ln_prev > lopt[Lnum]) && f)
         Lcount(Lnum);
 
     if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
@@ -214,15 +214,15 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double*
         abc[i] = 0;
     for (int i = 0; i < 3; i++)
         xyz[i] = 0;
-
+    bool f = true;
     abc = P1st_point(abc);
     /*for (int i = 0; i < 3; i++)
         cout << "abc[" << i << "] = " << abc[i] << endl;*/
 
     for (;;) {
         c = abc[2];
-        l = P2length(Lnum, d, xyz, abc, lopt);
-
+        l = P2length(Lnum, d, xyz, abc, lopt, f);
+        f = false;
         if (l == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
