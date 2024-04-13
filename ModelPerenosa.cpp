@@ -91,8 +91,8 @@ double* ModelPerenosa::P1st_point(double* abc) {
     while (abc[2] == 0) {
         temp = GetFi(temp);
         abc[0] = 0;
-        abc[1] = 0;
-        abc[2] = 1;
+        abc[1] = temp[0];
+        abc[2] = temp[1];
     };
     delete[]temp;
     
@@ -106,7 +106,7 @@ double ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, d
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
     double c = abc[2];          // косинус угла к поверхности Земли
 
-    if ((ln_prev > lopt[Lnum]) && f)
+    if ((ln_prev > (lopt[Lnum] / c)) && f && (c > 0))
         Lcount(Lnum);
 
     if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
