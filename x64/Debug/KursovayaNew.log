@@ -1,5 +1,2 @@
-﻿  Data.cpp
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(40,28): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(55,28): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(83,26): warning C4244: =: преобразование "double" в "float", возможна потеря данных
+﻿  LINK : не найден или не выполнена сборка C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\x64\Debug\KursovayaNew.exe при последней инкрементной компоновке; выполняется полная компоновка
   KursovayaNew.vcxproj -> C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\x64\Debug\KursovayaNew.exe
