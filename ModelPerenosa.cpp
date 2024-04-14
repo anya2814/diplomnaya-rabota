@@ -91,7 +91,7 @@ double* ModelPerenosa::P1st_point(double* abc) {
 // выбор длины свободного пробега l
 double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
     int curr_ht = z / 1;        // слой в котором находится частица
-    double a = GetA(), l;
+    double a = GetA(), b = GetA(), l;
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
     double c = abc[2];          // косинус угла к поверхности Земли
 
@@ -115,7 +115,8 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
                 l_sum += l;
                 curr_ht--;
             }
-            c = -c; abc[2] = c;
+            if (b <= 0.1) { c = -c; abc[2] = c; } 
+            else return(-2); // произошло поглощение частицы поверхностью Земли
         }
     }
 
@@ -145,6 +146,9 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
 double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double c) {
     if (c != abc[2]) {
         l = l - xyz[2] / c;
+        xyz[0] = xyz[0] + abc[0] * l;
+        xyz[1] = xyz[1] + abc[1] * l;
+        xyz[2] = abc[2] * l;
     }
     else {
         xyz[0] = xyz[0] + abc[0] * l;
@@ -217,6 +221,15 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
         }
         //cout << "l = " << l << endl;
 
+        if (l == -2)
+        {
+            // Произошло поглощение частицы поверхностью Земли
+            CrossLow(abc[2]);
+            delete[]abc;
+            delete[]xyz;
+            return 0;
+        }
+
         xyz = P3P4calcul(xyz, abc, l, c);
         //Cout_xyz(xyz);
         /*if (xyz[2] < 0)
@@ -273,9 +286,11 @@ void ModelPerenosa::OutToFile(double** tBig, double* waves)
     out.open("Results.txt");      // открываем файл для записи
     if (out.is_open())
     {
-        out << "Waves\tKtUpCross\tKtAbsorption\tKtUpCrossWeight" << std::endl;
-        for (int i = 0; i < 5; i++)
-            out << waves[i] << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2] / (kol * 1.0) << std::endl;
+        out << "Waves\tKtAbsorption\tKtUpCross\tKtUpCrossWeight\tKtLowCross\tKtLowCrossWeight" << std::endl;
+        for (int i = 0; i < 5; i++) {
+            out << waves[i] << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2] / (kol * 1.0);
+            out << '\t' << tBig[i][3] / (kol * 1.0) << '\t' << tBig[i][4] / (kol * 1.0) << std::endl;
+        }
     }
     out.close();
 }
@@ -285,13 +300,13 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
     int* t = new int[3];
     double** tBig = new double* [5];
     for (int i = 0; i < 5; i++)
-        tBig[i] = new double[3];
+        tBig[i] = new double[5];
     for (int i = 0; i < 5; i++)
     {
         SetSum0();
         std::cout << "Данные для длины волны l=" << waves[i] << " мкм: " << std::endl << std::endl;
         t = NModPer(t, mass, F, i, d);
-        std::cout << "Произошло " << t[0] << " вылетов за пределы среды через нижнюю границу. " << std::endl;
+        std::cout << "Произошло " << t[0] << " поглощений частиц поверхностью Земли. " << std::endl;
         std::cout << "Произошло " << t[1] << " вылетов за пределы среды через верхнюю границу. " << std::endl;
         std::cout << "Произошло " << t[2] << " поглощений. " << std::endl;
 
@@ -300,12 +315,13 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
 
         std::cout << std::endl;
         std::cout << "Коэффициент пересечения верхней границы с учетом веса: " << GetSumUp() << std::endl;
-        std::cout << "Коэффициент пересечения нижней границы с учетом веса: " << GetSumLow() << std::endl << std::endl << std::endl;
+        std::cout << "Коэффициент поглощения нижней границей с учетом веса: " << GetSumLow() << std::endl << std::endl << std::endl;
         
-        tBig[i][0] = t[1];
-        tBig[i][1] = t[2];
+        tBig[i][0] = t[2];
+        tBig[i][1] = t[1];
         tBig[i][2] = GetSumUp();
-        int o = 0;
+        tBig[i][3] = t[0];
+        tBig[i][4] = GetSumLow();
     }
 
     OutToFile(tBig, waves);
