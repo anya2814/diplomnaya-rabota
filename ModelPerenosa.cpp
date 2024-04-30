@@ -28,20 +28,27 @@ double ModelPerenosa::getMa(float* mass, double** F, int Lnum, double a)
 
 // вспомогательная функция для P1 и P7
 // нахождение косинуса и синуса для выбора начальной точки и пересчета координат направления пробега
-double* ModelPerenosa::GetFi(double* fi) {
+double* ModelPerenosa::GetFi(double* fi, double m) {
     double a1, a2;
     double w1 = 1, w2 = 1, d0;
     fi[1] = 1;
-    while ((w1 * w1 + w2 * w2) > 1)
+    if (m == 0) {
+        fi[0] = 0;
+        fi[1] = 0;
+        return fi;
+    }
+    while ((w1 * w1 + w2 * w2) > m)
     {
         a1 = GetA(); a2 = GetA();
         w1 = 1 - 2 * a1; w2 = 1 - 2 * a2;
     }
-    d0 = w1 * w1 + w2 * w2;
+    d0 = (w1 * w1 + w2 * w2)/m;
     fi[0] = w1 / sqrt(d0);       // косинус
     fi[1] = w2 / sqrt(d0);       // синус
     w1 = 1; w2 = 1;
     
+    if (abs((fi[0] * fi[0] + fi[1] * fi[1]) - m) > 0.0000001)
+        int i=0;
     return fi;
 }
 
@@ -85,16 +92,34 @@ void ModelPerenosa::SetSum0()
 
 // выбор начальной точки соответственно плотности распределения источника
 double* ModelPerenosa::P1st_point(double* abc) {
-    double* temp = new double[2];
-    while (abc[2] == 0) {
-        temp = GetFi(temp);
-        abc[0] = 0;
-        abc[1] = temp[0];
-        abc[2] = temp[1];
+    double a1, a2, a3;
+    double w1 = 1, w2 = 1, w3 = 1, d0;
+
+    while ((w1 * w1 + w2 * w2 + w3*w3) > 1)
+    {
+        a1 = GetA(); a2 = GetA(); a3 = GetA();
+        w1 = 1 - 2*a1; w2 = 1 - 2 * a2; w3 = 1 - 2*a3;
     }
-    delete[]temp;
+    d0 = w1 * w1 + w2 * w2 + w3 * w3;
+    abc[0] = w1 / sqrt(d0);   
+    abc[1] = w2 / sqrt(d0);       
+    abc[2] = w3 / sqrt(d0);
+
     return abc;
 }
+
+/*double* ModelPerenosa::P1st_point(double* abc) {
+    double* fi = new double[2];
+
+    abc[2] = 1 - 2*GetA();
+    double m = 1 - abc[2] * abc[2];
+    fi = GetFi(fi, m);
+
+    abc[1] = fi[0];
+    abc[2] = fi[1];
+
+    return abc;
+}*/
 
 // выбор длины свободного пробега l
 double ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, double* lopt, bool f) {
@@ -103,6 +128,8 @@ double ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, d
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
     double c = abc[2];          // косинус угла к поверхности Земли
 
+    if (abs(abc[2] - 1) > 0.00001)
+        int i = 0;
     if ((ln_prev > (lopt[Lnum] / c)) && f && (c > 0))
         Lcount(Lnum);
 
@@ -208,14 +235,14 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double*
     for (int i = 0; i < 3; i++)
         xyz[i] = 0;
     bool f = true;
+
     abc = P1st_point(abc);
-    m = GetA();
-    abc = P7napravl(abc, m);
 
     for (;;) {
 
         c = abc[2];
         l = P2length(Lnum, d, xyz, abc, lopt, f);
+        return 1;
         f = false;
         if (l == -1)
         {
