@@ -92,19 +92,12 @@ void ModelPerenosa::SetSum0()
 
 // выбор начальной точки соответственно плотности распределения источника
 double* ModelPerenosa::P1st_point(double* abc) {
-    double a1, a2, a3;
-    double w1 = 1, w2 = 1, w3 = 1, d0;
-
-    while ((w1 * w1 + w2 * w2 + w3*w3) > 1)
-    {
-        a1 = GetA(); a2 = GetA(); a3 = GetA();
-        w1 = 1 - 2*a1; w2 = 1 - 2 * a2; w3 = 1 - 2*a3;
-    }
-    d0 = w1 * w1 + w2 * w2 + w3 * w3;
-    abc[0] = w1 / sqrt(d0);   
-    abc[1] = w2 / sqrt(d0);       
-    abc[2] = w3 / sqrt(d0);
-
+    double* temp = new double[2];
+    temp = GetFi(temp);
+    abc[0] = temp[0];
+    abc[1] = temp[1];
+    abc[2] = 0;
+    delete[]temp;
     return abc;
 }
 
@@ -237,6 +230,8 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double*
     bool f = true;
 
     abc = P1st_point(abc);
+    m = 1 - 2 * GetA();
+    abc = P7napravl(abc, m);
 
     for (;;) {
 
