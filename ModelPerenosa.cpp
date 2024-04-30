@@ -32,17 +32,15 @@ double* ModelPerenosa::GetFi(double* fi) {
     double a1, a2;
     double w1 = 1, w2 = 1, d0;
     fi[1] = 1;
-    while ((fi[1] == 1)||(fi[1] == -1)||(d0==0)) {
-        while ((w1 * w1 + w2 * w2) > 1)
-        {
-            a1 = GetA(); a2 = GetA();
-            w1 = 1 - 2 * a1; w2 = 1 - 2 * a2;
-        }
-        d0 = w1 * w1 + w2 * w2;
-        fi[0] = w1 / sqrt(d0);       // косинус
-        fi[1] = w2 / sqrt(d0);       // синус
-        w1 = 1; w2 = 1;
+    while ((w1 * w1 + w2 * w2) > 1)
+    {
+        a1 = GetA(); a2 = GetA();
+        w1 = 1 - 2 * a1; w2 = 1 - 2 * a2;
     }
+    d0 = w1 * w1 + w2 * w2;
+    fi[0] = w1 / sqrt(d0);       // косинус
+    fi[1] = w2 / sqrt(d0);       // синус
+    w1 = 1; w2 = 1;
     
     return fi;
 }
@@ -93,9 +91,8 @@ double* ModelPerenosa::P1st_point(double* abc) {
         abc[0] = 0;
         abc[1] = temp[0];
         abc[2] = temp[1];
-    };
+    }
     delete[]temp;
-    
     return abc;
 }
 
@@ -182,17 +179,13 @@ bool ModelPerenosa::P5type(int Lnum, double** d, double* xyz) {
 // пересчет координат направления пробега
 double* ModelPerenosa::P7napravl(double* abc, double m) {
     double* fi = new double[2], abct[3]; 
-    double c = 0;
     for (int i = 0; i < 3; i++)
         abct[i] = abc[i];
-    while (c == 0) {
-        fi = GetFi(fi);
+    fi = GetFi(fi);
 
-        abc[0] = abct[0] * m - (abct[1] * fi[1] + abct[0] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
-        abc[1] = abct[1] * m + (abct[0] * fi[1] - abct[1] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
-        abc[2] = abct[2] * m + (1 - abct[2] * abct[2]) * fi[0] * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
-        c = abc[2];
-    }
+    abc[0] = abct[0] * m - (abct[1] * fi[1] + abct[0] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
+    abc[1] = abct[1] * m + (abct[0] * fi[1] - abct[1] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
+    abc[2] = abct[2] * m + (1 - abct[2] * abct[2]) * fi[0] * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
 
     delete[]fi;
     return abc;
@@ -216,10 +209,11 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double*
         xyz[i] = 0;
     bool f = true;
     abc = P1st_point(abc);
-    /*for (int i = 0; i < 3; i++)
-        cout << "abc[" << i << "] = " << abc[i] << endl;*/
+    m = GetA();
+    abc = P7napravl(abc, m);
 
     for (;;) {
+
         c = abc[2];
         l = P2length(Lnum, d, xyz, abc, lopt, f);
         f = false;
@@ -255,10 +249,9 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double*
             delete[]xyz;
             return 2;
         }
+
         m = getMa(mass, F, Lnum);
         abc = P7napravl(abc, m);
-        /*for (int i = 0; i < 3; i++)
-            cout << "abc[" << i << "] = " << abc[i] << endl;*/
     }
 
 }
