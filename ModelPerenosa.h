@@ -10,6 +10,7 @@
 static const int N = 204; // число заданных значений F и m в файле
 const double h = 30; // верхняя граница z
 const int kol = 100000; // количество моделируемых пробегов частиц
+#define PI 3.14159265
 
 class ModelPerenosa
 {

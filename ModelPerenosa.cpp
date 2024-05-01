@@ -111,7 +111,9 @@ void ModelPerenosa::SetSum0()
 double* ModelPerenosa::P1st_point(double* abc) {
     double* fi = new double[2];
 
-    abc[2] = 1 - 2 * GetA();
+    double mu = sqrt(2 * PI * GetA()); // угол в радианах
+    abc[2] = cos(mu);
+
     double m = 1 - abc[2] * abc[2];
     fi = GetFi(fi, m);
 
