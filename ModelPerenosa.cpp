@@ -1,6 +1,6 @@
-#include "ModelPerenosa.h"
+п»ї#include "ModelPerenosa.h"
 
-// получение случайного вещественного числа от 0 до 1
+// РїРѕР»СѓС‡РµРЅРёРµ СЃР»СѓС‡Р°Р№РЅРѕРіРѕ РІРµС‰РµСЃС‚РІРµРЅРЅРѕРіРѕ С‡РёСЃР»Р° РѕС‚ 0 РґРѕ 1
 double ModelPerenosa::GetA() {
     double a;
     a = (rand() % 1001) / 1000.;
@@ -10,8 +10,8 @@ double ModelPerenosa::GetA() {
 double ModelPerenosa::sumUp = 0;
 double ModelPerenosa::sumLow = 0;
 
-// вспомогательная функция для P6
-// выбор значения косинуса угла рассеяния m
+// РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ P6
+// РІС‹Р±РѕСЂ Р·РЅР°С‡РµРЅРёСЏ РєРѕСЃРёРЅСѓСЃР° СѓРіР»Р° СЂР°СЃСЃРµСЏРЅРёСЏ m
 double ModelPerenosa::getMa(float* mass, double** F, int Lnum, double a)
 {
     int leftI, rightI;
@@ -25,28 +25,31 @@ double ModelPerenosa::getMa(float* mass, double** F, int Lnum, double a)
     return cosm;
 }
 
-// вспомогательная функция для P1 и P7
-// нахождение косинуса и синуса для выбора начальной точки и пересчета координат направления пробега
-double* ModelPerenosa::GetFi(double* fi) {
+// РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ P1 Рё P7
+// РЅР°С…РѕР¶РґРµРЅРёРµ РєРѕСЃРёРЅСѓСЃР° Рё СЃРёРЅСѓСЃР° РґР»СЏ РІС‹Р±РѕСЂР° РЅР°С‡Р°Р»СЊРЅРѕР№ С‚РѕС‡РєРё Рё РїРµСЂРµСЃС‡РµС‚Р° РєРѕРѕСЂРґРёРЅР°С‚ РЅР°РїСЂР°РІР»РµРЅРёСЏ РїСЂРѕР±РµРіР°
+double* ModelPerenosa::GetFi(double* fi, double m) {
     double a1, a2;
     double w1 = 1, w2 = 1, d0;
     fi[1] = 1;
-    while ((fi[1] == 1)||(fi[1] == -1)||(d0==0)) {
-        while ((w1 * w1 + w2 * w2) > 1)
-        {
-            a1 = GetA(); a2 = GetA();
-            w1 = 1 - 2 * a1; w2 = 1 - 2 * a2;
-        }
-        d0 = w1 * w1 + w2 * w2;
-        fi[0] = w1 / sqrt(d0);       // косинус
-        fi[1] = w2 / sqrt(d0);       // синус
-        w1 = 1; w2 = 1;
+    if (m == 0) {
+        fi[0] = 0;
+        fi[1] = 0;
+        return fi;
     }
-    
+    while ((w1 * w1 + w2 * w2) > m)
+    {
+        a1 = GetA(); a2 = GetA();
+        w1 = 1 - 2 * a1; w2 = 1 - 2 * a2;
+    }
+    d0 = (w1 * w1 + w2 * w2) / m;
+    fi[0] = w1 / sqrt(d0);     
+    fi[1] = w2 / sqrt(d0);      
+    w1 = 1; w2 = 1;
+
     return fi;
 }
 
-// учет пересечений верхней площадки с весом 1/|(ns, w)|
+// СѓС‡РµС‚ РїРµСЂРµСЃРµС‡РµРЅРёР№ РІРµСЂС…РЅРµР№ РїР»РѕС‰Р°РґРєРё СЃ РІРµСЃРѕРј 1/|(ns, w)|
 void ModelPerenosa::CrossUp(double add)
 {
     sumUp = sumUp + 1.0 / (kol * abs(add));
@@ -57,7 +60,7 @@ double ModelPerenosa::GetSumUp()
     return sumUp;
 }
 
-// учет пересечений нижней площадки с весом 1/|(ns, w)|
+// СѓС‡РµС‚ РїРµСЂРµСЃРµС‡РµРЅРёР№ РЅРёР¶РЅРµР№ РїР»РѕС‰Р°РґРєРё СЃ РІРµСЃРѕРј 1/|(ns, w)|
 void ModelPerenosa::CrossLow(double add)
 {
     sumLow = sumLow + 1.0 / (kol * abs(add));
@@ -74,31 +77,34 @@ void ModelPerenosa::SetSum0()
     sumUp = 0;
 }
 
-// выбор начальной точки соответственно плотности распределения источника
+// РІС‹Р±РѕСЂ РЅР°С‡Р°Р»СЊРЅРѕР№ С‚РѕС‡РєРё СЃРѕРѕС‚РІРµС‚СЃС‚РІРµРЅРЅРѕ РїР»РѕС‚РЅРѕСЃС‚Рё СЂР°СЃРїСЂРµРґРµР»РµРЅРёСЏ РёСЃС‚РѕС‡РЅРёРєР°
 double* ModelPerenosa::P1st_point(double* abc) {
-    double* temp = new double[2];
-    while (abc[2] == 0) {
-        temp = GetFi(temp);
-        abc[0] = 0;
-        abc[1] = temp[0];
-        abc[2] = temp[1];
-    };
-    delete[]temp;
-    
+    double* fi = new double[2];
+    abc[2] = 0;
+    while (
+        (abc[2]==1) || (abc[2] == -1)) {
+        abc[2] = 1 - 2 * GetA();
+    }
+    double m = 1 - abc[2] * abc[2];
+    fi = GetFi(fi, m);
+
+    abc[0] = fi[0];
+    abc[1] = fi[1];
+
     return abc;
 }
 
-// выбор длины свободного пробега l
+// РІС‹Р±РѕСЂ РґР»РёРЅС‹ СЃРІРѕР±РѕРґРЅРѕРіРѕ РїСЂРѕР±РµРіР° l
 double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
-    int curr_ht = z / 1;        // слой в котором находится частица
+    int curr_ht = z / 1;        // СЃР»РѕР№ РІ РєРѕС‚РѕСЂРѕРј РЅР°С…РѕРґРёС‚СЃСЏ С‡Р°СЃС‚РёС†Р°
     double a = GetA(), b = GetA(), l;
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
-    double c = abc[2];          // косинус угла к поверхности Земли
+    double c = abc[2];          // РєРѕСЃРёРЅСѓСЃ СѓРіР»Р° Рє РїРѕРІРµСЂС…РЅРѕСЃС‚Рё Р—РµРјР»Рё
 
-    if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
+    if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // РµСЃР»Рё С‡Р°СЃС‚РёС†Р° Р»РµС‚РёС‚ РіРѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅРѕ
 
     if (c < 0) {
-        // первый слой
+        // РїРµСЂРІС‹Р№ СЃР»РѕР№
         l = (z - curr_ht * 1.0) / abs(c);
         ln_new = ln_prev - l * d[Lnum][curr_ht];
 
@@ -116,12 +122,12 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
                 curr_ht--;
             }
             if (b <= 0.1) { c = -c; abc[2] = c; } 
-            else return(-2); // произошло поглощение частицы поверхностью Земли
+            else return(-2); // РїСЂРѕРёР·РѕС€Р»Рѕ РїРѕРіР»РѕС‰РµРЅРёРµ С‡Р°СЃС‚РёС†С‹ РїРѕРІРµСЂС…РЅРѕСЃС‚СЊСЋ Р—РµРјР»Рё
         }
     }
 
     else {
-        // первый слой
+        // РїРµСЂРІС‹Р№ СЃР»РѕР№
         l = ((curr_ht * 1.0 + 1) - z) / c;
         ln_new = ln_prev - l * d[Lnum][curr_ht];
         if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
@@ -141,13 +147,13 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
     }
 }
 
-// проверка вылета из среды 
-// вычисление координат очередной точки столкновения
+// РїСЂРѕРІРµСЂРєР° РІС‹Р»РµС‚Р° РёР· СЃСЂРµРґС‹ 
+// РІС‹С‡РёСЃР»РµРЅРёРµ РєРѕРѕСЂРґРёРЅР°С‚ РѕС‡РµСЂРµРґРЅРѕР№ С‚РѕС‡РєРё СЃС‚РѕР»РєРЅРѕРІРµРЅРёСЏ
 double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double c) {
     if (c != abc[2]) {
-        l = l - xyz[2] / c;
         xyz[0] = xyz[0] + abc[0] * l;
         xyz[1] = xyz[1] + abc[1] * l;
+        l = l - xyz[2] / c;
         xyz[2] = abc[2] * l;
     }
     else {
@@ -159,23 +165,23 @@ double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double c) 
     return xyz;
 }
 
-// выбор типа столкновения (поглощение или рассеяние)
+// РІС‹Р±РѕСЂ С‚РёРїР° СЃС‚РѕР»РєРЅРѕРІРµРЅРёСЏ (РїРѕРіР»РѕС‰РµРЅРёРµ РёР»Рё СЂР°СЃСЃРµСЏРЅРёРµ)
 bool ModelPerenosa::P5type(int Lnum, double** d, double* xyz) {
     double a = GetA();
     int curr_ht = xyz[2] / 1;
     double Ps = d[Lnum][100 + curr_ht];// / d[Lnum][curr_ht];
 
-    if (a < Ps) return 0; // произошло рассеяние
-    else return 1; // произошло поглощение
+    if (a < Ps) return 0; // РїСЂРѕРёР·РѕС€Р»Рѕ СЂР°СЃСЃРµСЏРЅРёРµ
+    else return 1; // РїСЂРѕРёР·РѕС€Р»Рѕ РїРѕРіР»РѕС‰РµРЅРёРµ
 }
 
-// пересчет координат направления пробега
+// РїРµСЂРµСЃС‡РµС‚ РєРѕРѕСЂРґРёРЅР°С‚ РЅР°РїСЂР°РІР»РµРЅРёСЏ РїСЂРѕР±РµРіР°
 double* ModelPerenosa::P7napravl(double* abc, double m) {
     double* fi = new double[2], abct[3]; 
     double c = 0;
     for (int i = 0; i < 3; i++)
         abct[i] = abc[i];
-    while (c == 0) {
+    while ((c == 1) || (c == -1)) {
         fi = GetFi(fi);
 
         abc[0] = abct[0] * m - (abct[1] * fi[1] + abct[0] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
@@ -195,7 +201,7 @@ void ModelPerenosa::Cout_xyz(double* xyz) {
         << ", z = " << xyz[2] << ";" << std::endl;
 }
 
-// функция для моделирования процесса переноса
+// С„СѓРЅРєС†РёСЏ РґР»СЏ РјРѕРґРµР»РёСЂРѕРІР°РЅРёСЏ РїСЂРѕС†РµСЃСЃР° РїРµСЂРµРЅРѕСЃР°
 int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
     double* abc = new double[3], * xyz = new double[3];
     double l, m, c;
@@ -213,7 +219,9 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
 
         if (l == -1)
         {
-            // Произошел вылет за пределы среды через верхнюю границу
+            // РџСЂРѕРёР·РѕС€РµР» РІС‹Р»РµС‚ Р·Р° РїСЂРµРґРµР»С‹ СЃСЂРµРґС‹ С‡РµСЂРµР· РІРµСЂС…РЅСЋСЋ РіСЂР°РЅРёС†Сѓ
+            if (abc[2] == 0)
+                int p = 0;
             CrossUp(abc[2]);
             delete[]abc;
             delete[]xyz;
@@ -223,7 +231,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
 
         if (l == -2)
         {
-            // Произошло поглощение частицы поверхностью Земли
+            // РџСЂРѕРёР·РѕС€Р»Рѕ РїРѕРіР»РѕС‰РµРЅРёРµ С‡Р°СЃС‚РёС†С‹ РїРѕРІРµСЂС…РЅРѕСЃС‚СЊСЋ Р—РµРјР»Рё
             CrossLow(abc[2]);
             delete[]abc;
             delete[]xyz;
@@ -236,18 +244,18 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
         {
             xyz[2] = -xyz[2];
             abc[2] = abc[2] + 0.5;
-            // Произошло отражение частицы от поверхности земли
+            // РџСЂРѕРёР·РѕС€Р»Рѕ РѕС‚СЂР°Р¶РµРЅРёРµ С‡Р°СЃС‚РёС†С‹ РѕС‚ РїРѕРІРµСЂС…РЅРѕСЃС‚Рё Р·РµРјР»Рё
         }*/
         /*if (xyz[2] > h)
         {
-            // Произошел вылет за пределы среды через верхнюю границу
+            // РџСЂРѕРёР·РѕС€РµР» РІС‹Р»РµС‚ Р·Р° РїСЂРµРґРµР»С‹ СЃСЂРµРґС‹ С‡РµСЂРµР· РІРµСЂС…РЅСЋСЋ РіСЂР°РЅРёС†Сѓ
             CrossUp(abc[2]);
             delete[]abc;
             delete[]xyz;
             return 1;
         }*/
         if (P5type(Lnum, d, xyz)) {
-            // Произошло поглощение
+            // РџСЂРѕРёР·РѕС€Р»Рѕ РїРѕРіР»РѕС‰РµРЅРёРµ
             delete[]abc;
             delete[]xyz;
             return 2;
@@ -274,16 +282,16 @@ int* ModelPerenosa::NModPer(int* t, float* mass, double** F, int Lnum, double** 
 
 void ModelPerenosa::CountK(int* t)
 {
-    std::cout << "Коэффициент вылета через нижнюю границу: k1 = " << t[0] / (kol * 1.0) << std::endl;
-    std::cout << "Коэффициент вылета через верхнюю границу: k2 = " << t[1] / (kol * 1.0) << std::endl;
-    std::cout << "Коэффициент поглощений: k3 = " << t[2] / (kol * 1.0) << std::endl;
+    std::cout << "РљРѕСЌС„С„РёС†РёРµРЅС‚ РІС‹Р»РµС‚Р° С‡РµСЂРµР· РЅРёР¶РЅСЋСЋ РіСЂР°РЅРёС†Сѓ: k1 = " << t[0] / (kol * 1.0) << std::endl;
+    std::cout << "РљРѕСЌС„С„РёС†РёРµРЅС‚ РІС‹Р»РµС‚Р° С‡РµСЂРµР· РІРµСЂС…РЅСЋСЋ РіСЂР°РЅРёС†Сѓ: k2 = " << t[1] / (kol * 1.0) << std::endl;
+    std::cout << "РљРѕСЌС„С„РёС†РёРµРЅС‚ РїРѕРіР»РѕС‰РµРЅРёР№: k3 = " << t[2] / (kol * 1.0) << std::endl;
 }
 
-// вывод результатов в файл
+// РІС‹РІРѕРґ СЂРµР·СѓР»СЊС‚Р°С‚РѕРІ РІ С„Р°Р№Р»
 void ModelPerenosa::OutToFile(double** tBig, double* waves)
 {
     std::ofstream out;        
-    out.open("Results.txt");      // открываем файл для записи
+    out.open("Results.txt");      // РѕС‚РєСЂС‹РІР°РµРј С„Р°Р№Р» РґР»СЏ Р·Р°РїРёСЃРё
     if (out.is_open())
     {
         out << "Waves\tKtAbsorption\tKtUpCross\tKtUpCrossWeight\tKtLowCross\tKtLowCrossWeight" << std::endl;
@@ -304,18 +312,18 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
     for (int i = 0; i < 5; i++)
     {
         SetSum0();
-        std::cout << "Данные для длины волны l=" << waves[i] << " мкм: " << std::endl << std::endl;
+        std::cout << "Р”Р°РЅРЅС‹Рµ РґР»СЏ РґР»РёРЅС‹ РІРѕР»РЅС‹ l=" << waves[i] << " РјРєРј: " << std::endl << std::endl;
         t = NModPer(t, mass, F, i, d);
-        std::cout << "Произошло " << t[0] << " поглощений частиц поверхностью Земли. " << std::endl;
-        std::cout << "Произошло " << t[1] << " вылетов за пределы среды через верхнюю границу. " << std::endl;
-        std::cout << "Произошло " << t[2] << " поглощений. " << std::endl;
+        std::cout << "РџСЂРѕРёР·РѕС€Р»Рѕ " << t[0] << " РїРѕРіР»РѕС‰РµРЅРёР№ С‡Р°СЃС‚РёС† РїРѕРІРµСЂС…РЅРѕСЃС‚СЊСЋ Р—РµРјР»Рё. " << std::endl;
+        std::cout << "РџСЂРѕРёР·РѕС€Р»Рѕ " << t[1] << " РІС‹Р»РµС‚РѕРІ Р·Р° РїСЂРµРґРµР»С‹ СЃСЂРµРґС‹ С‡РµСЂРµР· РІРµСЂС…РЅСЋСЋ РіСЂР°РЅРёС†Сѓ. " << std::endl;
+        std::cout << "РџСЂРѕРёР·РѕС€Р»Рѕ " << t[2] << " РїРѕРіР»РѕС‰РµРЅРёР№. " << std::endl;
 
         std::cout << std::endl;
         CountK(t);
 
         std::cout << std::endl;
-        std::cout << "Коэффициент пересечения верхней границы с учетом веса: " << GetSumUp() << std::endl;
-        std::cout << "Коэффициент поглощения нижней границей с учетом веса: " << GetSumLow() << std::endl << std::endl << std::endl;
+        std::cout << "РљРѕСЌС„С„РёС†РёРµРЅС‚ РїРµСЂРµСЃРµС‡РµРЅРёСЏ РІРµСЂС…РЅРµР№ РіСЂР°РЅРёС†С‹ СЃ СѓС‡РµС‚РѕРј РІРµСЃР°: " << GetSumUp() << std::endl;
+        std::cout << "РљРѕСЌС„С„РёС†РёРµРЅС‚ РїРѕРіР»РѕС‰РµРЅРёСЏ РЅРёР¶РЅРµР№ РіСЂР°РЅРёС†РµР№ СЃ СѓС‡РµС‚РѕРј РІРµСЃР°: " << GetSumLow() << std::endl << std::endl << std::endl;
         
         tBig[i][0] = t[2];
         tBig[i][1] = t[1];
