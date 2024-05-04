@@ -11,72 +11,14 @@ double ModelPerenosa::sumUp = 0;
 double ModelPerenosa::sumLow = 0;
 int ModelPerenosa::L[5] = { 0, 0, 0, 0, 0 };
 
-// вспомогательная функция для P6
-// выбор значения косинуса угла рассеяния m
-double ModelPerenosa::getMa(float* mass, double** F, int Lnum, double a)
-{
-    int leftI, rightI;
-    double cosm;
-    if (a == 0) cosm = mass[0];
-    else for (int i = 1; i < N; i++)
-        if (a <= F[i][Lnum]) {
-            rightI = i - 1; leftI = i; i = N;
-            cosm = mass[rightI] - (mass[rightI] * 1.0 - mass[leftI] * 1.0) * (a - F[rightI][Lnum]) / (F[leftI][Lnum] - F[rightI][Lnum]);
-        }
-    return cosm;
-}
-
-// вспомогательная функция для P1 и P7
-// нахождение косинуса и синуса для выбора начальной точки и пересчета координат направления пробега
-double* ModelPerenosa::GetFi(double* fi, double m) {
-    double a1, a2;
-    double w1 = 1, w2 = 1, d0;
-    fi[1] = 1;
-    if (m == 0) {
-        fi[0] = 0;
-        fi[1] = 0;
-        return fi;
-    }
-    while ((w1 * w1 + w2 * w2) > m)
-    {
-        a1 = GetA(); a2 = GetA();
-        w1 = 1 - 2 * a1; w2 = 1 - 2 * a2;
-    }
-    d0 = (w1 * w1 + w2 * w2)/m;
-    fi[0] = w1 / sqrt(d0);       // косинус
-    fi[1] = w2 / sqrt(d0);       // синус
-    w1 = 1; w2 = 1;
-    
-    if (abs((fi[0] * fi[0] + fi[1] * fi[1]) - m) > 0.0000001)
-        int i=0;
-    return fi;
-}
-
 void ModelPerenosa::Lcount(int waveNum)
 {
     L[waveNum]++;
 }
 
-// учет пересечений верхней площадки с весом 1/|(ns, w)|
-void ModelPerenosa::CrossUp(double add)
-{
-    sumUp = sumUp + 1.0 / (kol * abs(add));
-}
-
 double ModelPerenosa::GetSumUp()
 {
     return sumUp;
-}
-
-// учет пересечений нижней площадки с весом 1/|(ns, w)|
-void ModelPerenosa::CrossLow(double add)
-{
-    sumLow = sumLow + 1.0 / (kol * abs(add));
-}
-
-double ModelPerenosa::GetSumLow()
-{
-    return sumLow;
 }
 
 int ModelPerenosa::GetL(int waveNum)
@@ -90,145 +32,71 @@ void ModelPerenosa::SetSum0()
     sumUp = 0;
 }
 
-// выбор начальной точки соответственно плотности распределения источника
-/*double* ModelPerenosa::P1st_point(double* abc) {
-    double a1, a2, a3;
-    double w1 = 1, w2 = 1, w3 = 1, d0;
-
-    while ((w1 * w1 + w2 * w2 + w3 * w3) > 1)
-    {
-        a1 = GetA(); a2 = GetA(); a3 = GetA();
-        w1 = 0; w2 = 1 - 2 * a2; w3 = 1 - 2 * a3;
+double* ModelPerenosa::GetFi(double* fi) {
+    double a1, a2;
+    double w1 = 1, w2 = 1, d0 = 0;
+    while (d0 == 0) {
+        while ((w1 * w1 + w2 * w2) > 1)
+        {
+            a1 = GetA(); a2 = GetA();
+            w1 = 1 - 2 * a1; w2 = 1 - 2 * a2;
+        }
+        d0 = w1 * w1 + w2 * w2;
+        fi[0] = w1 / sqrt(d0);       // косинус фи
+        fi[1] = w2 / sqrt(d0);       // синус фи
+        w1 = 1; w2 = 1;
     }
-    d0 = w1 * w1 + w2 * w2 + w3 * w3;
-    abc[0] = w1 / sqrt(d0);
-    abc[1] = w2 / sqrt(d0);
-    abc[2] = w3 / sqrt(d0);
-    
-    return abc;
-}*/
+        
+    return fi;
+}
 
-double* ModelPerenosa::P1st_point(double* abc) {
+// выбор начального распределения соответственно плотности распределения источника
+/*double* ModelPerenosa::P1st_point(double* abc) {
     double* fi = new double[2];
-
+    fi = GetFi(fi);
     abc[2] = 1 - 2 * GetA();
     double m = 1 - abc[2] * abc[2];
-    fi = GetFi(fi, m);
 
     abc[0] = fi[0];
     abc[1] = fi[1];
 
     return abc;
-}
+}*/
 
-// выбор длины свободного пробега l
-double ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, double* lopt, bool f) {
-    int curr_ht = xyz[2] / 1;        // слой в котором находится частица
-    double a = GetA(), l;
-    double ln_prev = -log(a), ln_new, l_sum = 0;    //  
-    double c = abc[2];          // косинус угла к поверхности Земли
-
-    if (abs(abc[2] - 1) > 0.00001)
-        int i = 0;
-    if ((ln_prev > (lopt[Lnum] / c)) && f && (c > 0))
-        Lcount(Lnum);
-
-    if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
-
-    if (c < 0) {
-        // первый слой
-        l = (xyz[2] - curr_ht * 1.0) / abs(c);
-        ln_new = ln_prev - l * d[Lnum][curr_ht];
-
-        if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
-        
-        if (curr_ht == 0) { c = -c; abc[2] = c; }
-        else {
-            curr_ht--;
-            for (; curr_ht >= 0;) {
-                ln_prev = ln_new;
-                l = 1 / abs(c);
-                ln_new = ln_prev - l * d[Lnum][curr_ht];
-                if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
-                l_sum += l;
-                curr_ht--;
-            }
-            c = -c; abc[2] = c;
-        }
-    }
-
-    else {
-        // первый слой
-        l = ((curr_ht * 1.0 + 1) - xyz[2]) / c;
-        ln_new = ln_prev - l * d[Lnum][curr_ht];
-        if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
-        l_sum += l;
-        curr_ht++;
-    }
-
-    for (; curr_ht < 100;) {
-        ln_prev = ln_new;
-        l = 1 / c;
-        if (d[Lnum][curr_ht] < 0.00000001)
-            return -1;
-        ln_new = ln_prev - l * d[Lnum][curr_ht];
-        if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
-        l_sum += l;
-        curr_ht++;
-    }
-}
-
-// проверка вылета из среды 
-// вычисление координат очередной точки столкновения
-double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double c) {
-    if (c != abc[2]) {
-        l = l - xyz[2] / c;
-    }
-    else {
-        xyz[0] = xyz[0] + abc[0] * l;
-        xyz[1] = xyz[1] + abc[1] * l;
-        xyz[2] = xyz[2] + abc[2] * l;
-    };
-
-    return xyz;
-}
-
-// выбор типа столкновения (поглощение или рассеяние)
-bool ModelPerenosa::P5type(int Lnum, double** d, double* xyz) {
-    double a = GetA();
-    int curr_ht = xyz[2] / 1;
-    double Ps = d[Lnum][100 + curr_ht];// / d[Lnum][curr_ht];
-
-    if (a < Ps) return 0; // произошло рассеяние
-    else return 1; // произошло поглощение
-}
-
-// пересчет координат направления пробега
-double* ModelPerenosa::P7napravl(double* abc, double m) {
-    double* fi = new double[2], abct[3]; 
-    for (int i = 0; i < 3; i++)
-        abct[i] = abc[i];
+// выбор начального распределения соответственно плотности распределения источника
+double* ModelPerenosa::P1st_point(double* abc) {
+    double* fi = new double[2];
     fi = GetFi(fi);
 
-    abc[0] = abct[0] * m - (abct[1] * fi[1] + abct[0] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
-    abc[1] = abct[1] * m + (abct[0] * fi[1] - abct[1] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
-    abc[2] = abct[2] * m + (1 - abct[2] * abct[2]) * fi[0] * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
+    double cost = GetA();   // косинус тета
+    double cosf = fi[0], sinf = fi[1]; // косинус и синус фи 
+    double sint = sqrt(1 - cost * cost);    // синус тета
+    
+    abc[0] = sint*cosf;
+    abc[1] = sint*sinf;
+    abc[2] = cost;
 
-    delete[]fi;
     return abc;
 }
 
-void ModelPerenosa::Cout_xyz(double* xyz) {
+// выбор длины свободного пробега l
+void ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, double* lopt, bool f) {
+    double a = GetA(), l;
+    double l = -log(a);    //  
+    double c = abc[2];          // косинус угла к поверхности Земли
 
-    std::cout << "x = " << xyz[0]
-        << ", y = " << xyz[1]
-        << ", z = " << xyz[2] << ";" << std::endl;
+    while ((a == 0) || (a == 1))
+        a = GetA();
+    l = -log(a);
+    // длина полета больше чем оптическая длина поделить на косинус зенитного угла
+    if ((l > (lopt[Lnum] / abc[2])) && (abc[2] > 0))
+        Lcount(Lnum);
+
 }
 
 // функция для моделирования процесса переноса
-int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double* lopt) {
+void ModelPerenosa::ModPer(int Lnum, double** d, double* lopt) {
     double* abc = new double[3], * xyz = new double[3];
-    double l, m, c;
 
     for (int i = 0; i < 3; i++)
         abc[i] = 0;
@@ -238,89 +106,26 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double*
 
     abc = P1st_point(abc);
 
-    for (;;) {
-
-        c = abc[2];
-        l = P2length(Lnum, d, xyz, abc, lopt, f);
-        return 1;
-        f = false;
-        if (l == -1)
-        {
-            // Произошел вылет за пределы среды через верхнюю границу
-            CrossUp(abc[2]);
-            delete[]abc;
-            delete[]xyz;
-            return 1;
-        }
-        //cout << "l = " << l << endl;
-
-        xyz = P3P4calcul(xyz, abc, l, c);
-        //Cout_xyz(xyz);
-        /*if (xyz[2] < 0)
-        {
-            xyz[2] = -xyz[2];
-            abc[2] = abc[2] + 0.5;
-            // Произошло отражение частицы от поверхности земли
-        }*/
-        /*if (xyz[2] > h)
-        {
-            // Произошел вылет за пределы среды через верхнюю границу
-            CrossUp(abc[2]);
-            delete[]abc;
-            delete[]xyz;
-            return 1;
-        }*/
-        if (P5type(Lnum, d, xyz)) {
-            // Произошло поглощение
-            delete[]abc;
-            delete[]xyz;
-            return 2;
-        }
-
-        m = getMa(mass, F, Lnum);
-        abc = P7napravl(abc, m);
-    }
-
+    P2length(Lnum, d, xyz, abc, lopt, f);
 }
 
-int* ModelPerenosa::NModPer(int* t, float* mass, double** F, int Lnum, double** d, double* lopt)
+int* ModelPerenosa::NModPer(int* t, int Lnum, double** d, double* lopt)
 {
-    int k;
-    for (int i = 0; i < 3; i++)
-        t[i] = 0;
     for (int i = 0; i < kol; i++) {
-        k = ModPer(mass, F, Lnum, d, lopt);
-        t[k]++;
+        ModPer(Lnum, d, lopt);
     }
 
     return t;
 }
 
-void ModelPerenosa::CountK(int* t)
-{
-    std::cout << "Коэффициент вылета через нижнюю границу: k1 = " << t[0] / (kol * 1.0) << std::endl;
-    std::cout << "Коэффициент вылета через верхнюю границу: k2 = " << t[1] / (kol * 1.0) << std::endl;
-    std::cout << "Коэффициент поглощений: k3 = " << t[2] / (kol * 1.0) << std::endl;
-}
 
-void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double** d, double* lopt)
+void ModelPerenosa::Modelirovanie(double* waves, double** d, double* lopt)
 {
     int* t = new int[3];
     for (int i = 0; i < 5; i++)
     {
         SetSum0();
-        std::cout << "Данные для длины волны l=" << waves[i] << " мкм: " << std::endl << std::endl;
-        t = NModPer(t, mass, F, i, d, lopt);
-        std::cout << "Произошло " << t[0] << " вылетов за пределы среды через нижнюю границу. " << std::endl;
-        std::cout << "Произошло " << t[1] << " вылетов за пределы среды через верхнюю границу. " << std::endl;
-        std::cout << "Произошло " << t[2] << " поглощений. " << std::endl;
-
-        std::cout << std::endl;
-        CountK(t);
-
-        std::cout << std::endl;
-        std::cout << "Коэффициент пересечения верхней границы с учетом веса: " << GetSumUp() << std::endl;
-        std::cout << "Коэффициент пересечения нижней границы с учетом веса: " << GetSumLow() << std::endl << std::endl << std::endl;
+        t = NModPer(t, i, d, lopt);
     }
     delete[]t;
 }

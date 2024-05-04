@@ -17,20 +17,14 @@ int main()
     double** d = new double* [5];  // коэффициент ослабления потока - первые 100
     for (int i = 0; i < 5; i++) // альбедо однократного рассеяния - 100-200-ые
         d[i] = new double[200]; // делаю для каждой из 100 высот
-    float* mass = new float[N];
-    double** F = new double* [N];
-    for (int i = 0; i < N; i++)
-        F[i] = new double[5];
     waves = objData.getWaves(waves);
-    mass = objData.getM(mass);
-    F = objData.getF(F, mass);
     d = objData.getd(d, waves);
     lopt = objData.lOpt(lopt, d, waves);
 
     ModelPerenosa objModel;
 
     // моделирование процессов переноса
-    objModel.Modelirovanie(mass, F, waves, d, lopt);
+    objModel.Modelirovanie(waves, d, lopt);
     
     // вывод в файл вероятности что l больше 
     std::ofstream out;
@@ -45,14 +39,9 @@ int main()
     out.close();
     
     delete[]lopt;
-    delete[]mass;
     delete[]waves;
     for (int i = 0; i < 2; i++)
         delete[]d[i];
     delete[]d;
-    for (int i = 0; i < N; i++)
-        delete[]F[i];
-    delete[]F;
-
     return 0;
 }
