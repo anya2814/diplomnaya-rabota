@@ -81,8 +81,7 @@ void ModelPerenosa::SetSum0()
 double* ModelPerenosa::P1st_point(double* abc) {
     double* fi = new double[2];
     abc[2] = 0;
-    while (
-        (abc[2]==1) || (abc[2] == -1)) {
+    while ((abc[2] == 0) || (abc[2]==1) || (abc[2] == -1)) {
         abc[2] = 1 - 2 * GetA();
     }
     double m = 1 - abc[2] * abc[2];
@@ -101,12 +100,18 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
     double c = abc[2];          // косинус угла к поверхности Земли
 
+    while ((a == 0) || (a == 1)) {
+        a = GetA();
+    }
+    ln_prev = -log(a);
+
     if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
 
     if (c < 0) {
         // первый слой
         l = (z - curr_ht * 1.0) / abs(c);
         ln_new = ln_prev - l * d[Lnum][curr_ht];
+        l_sum +=l;
 
         if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
         
@@ -118,6 +123,7 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
                 l = 1 / abs(c);
                 ln_new = ln_prev - l * d[Lnum][curr_ht];
                 if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
+
                 l_sum += l;
                 curr_ht--;
             }
@@ -129,6 +135,8 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
     else {
         // первый слой
         l = ((curr_ht * 1.0 + 1) - z) / c;
+        if (d[Lnum][curr_ht] < 0.00000001)
+            return -1;
         ln_new = ln_prev - l * d[Lnum][curr_ht];
         if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
         l_sum += l;
@@ -138,10 +146,9 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
     for (; curr_ht < 100;) {
         ln_prev = ln_new;
         l = 1 / c;
-        if (d[Lnum][curr_ht] < 0.00000001)
-            return -1;
         ln_new = ln_prev - l * d[Lnum][curr_ht];
         if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
+
         l_sum += l;
         curr_ht++;
     }
@@ -150,12 +157,13 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
 // проверка вылета из среды 
 // вычисление координат очередной точки столкновения
 double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double c) {
-    if (c != abc[2]) {
+    if ((c != abc[2]) & (c != 0)) {
         xyz[0] = xyz[0] + abc[0] * l;
         xyz[1] = xyz[1] + abc[1] * l;
-        l = l - xyz[2] / c;
+        l = l - xyz[2] / abs(c);
         xyz[2] = abc[2] * l;
     }
+
     else {
         xyz[0] = xyz[0] + abc[0] * l;
         xyz[1] = xyz[1] + abc[1] * l;
@@ -178,7 +186,7 @@ bool ModelPerenosa::P5type(int Lnum, double** d, double* xyz) {
 // пересчет координат направления пробега
 double* ModelPerenosa::P7napravl(double* abc, double m) {
     double* fi = new double[2], abct[3]; 
-    double c = 0;
+    double c = 1;
     for (int i = 0; i < 3; i++)
         abct[i] = abc[i];
     while ((c == 1) || (c == -1)) {
@@ -216,12 +224,11 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
     for (;;) {
         c = abc[2];
         l = P2length(Lnum, d, xyz[2], abc);
-
+        if ((!(l >= 0)) & (l != -1) & (l != -2))
+            int y = 0;
         if (l == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
-            if (abc[2] == 0)
-                int p = 0;
             CrossUp(abc[2]);
             delete[]abc;
             delete[]xyz;
@@ -237,7 +244,6 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
             delete[]xyz;
             return 0;
         }
-
         xyz = P3P4calcul(xyz, abc, l, c);
         //Cout_xyz(xyz);
         /*if (xyz[2] < 0)
