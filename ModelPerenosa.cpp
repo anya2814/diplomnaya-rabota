@@ -52,6 +52,8 @@ double* ModelPerenosa::GetFi(double* fi, double m) {
 // учет пересечений верхней площадки с весом 1/|(ns, w)|
 void ModelPerenosa::CrossUp(double add)
 {
+    if ((1.0 / (kol * abs(add))) > 100)
+        int i = 1;
     sumUp = sumUp + 1.0 / (kol * abs(add));
 }
 
@@ -77,24 +79,70 @@ void ModelPerenosa::SetSum0()
     sumUp = 0;
 }
 
-// выбор начальной точки соответственно плотности распределения источника
-double* ModelPerenosa::P1st_point(double* abc) {
+// выбор направления для ламбертовского распределения
+/*double* ModelPerenosa::GetLambert(double* abc) {
     double* fi = new double[2];
-    abc[2] = 0;
-    while ((abc[2] == 0) || (abc[2]==1) || (abc[2] == -1)) {
-        abc[2] = 1 - 2 * GetA();
-    }
+
+    abc[2] = sqrt(GetA());
+
     double m = 1 - abc[2] * abc[2];
     fi = GetFi(fi, m);
 
     abc[0] = fi[0];
     abc[1] = fi[1];
 
+    delete []fi;
+
+    return abc;
+}*/
+
+// выбор направления для ламбертовского распределения
+double* ModelPerenosa::GetLambert(double* abc) {
+    double* fi = new double[2];
+    fi = GetFi(fi);
+
+    double cost = 1;   // косинус тета
+    while (cost == 1)
+        cost = sqrt(GetA());
+
+    double cosf = fi[0], sinf = fi[1]; // косинус фи
+    double sint = sqrt(1 - cost * cost);    // синус тета
+
+    abc[0] = sint * cosf;
+    abc[1] = sint * sinf;
+    abc[2] = cost;
+
+    if ((abc[0] * abc[0] + abc[1] * abc[1] + abc[2] * abc[2] - 1) > 0.00000001)
+        int y = 0;
+
+    delete[]fi;
+
+    return abc;
+}
+
+// выбор направления для изотропного распределения
+double* ModelPerenosa::GetIzotr(double* abc) {
+    double* fi = new double[2];
+    fi = GetFi(fi);
+
+    double cost = 1;   // косинус тета
+    while (cost == 1)
+        cost = GetA();
+
+    double cosf = fi[0], sinf = fi[1]; // косинус фи
+    double sint = sqrt(1 - cost * cost);    // синус тета
+    
+    abc[0] = sint * cosf;
+    abc[1] = sint * sinf;
+    abc[2] = cost;
+
+    delete[]fi;
+
     return abc;
 }
 
 // выбор длины свободного пробега l
-double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
+double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, double pp) {
     int curr_ht = z / 1;        // слой в котором находится частица
     double a = GetA(), b = GetA(), l;
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
@@ -111,11 +159,18 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
         // первый слой
         l = (z - curr_ht * 1.0) / abs(c);
         ln_new = ln_prev - l * d[Lnum][curr_ht];
-        l_sum +=l;
+        l_sum += l;
 
         if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
-        
-        if (curr_ht == 0) { c = -c; abc[2] = c; }
+
+        if (curr_ht == 0) {
+            if (b <= pp) {
+                abc = GetLambert(abc);
+                c = abc[2];
+                if (c == 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
+            }
+            else return(-2); // произошло поглощение частицы поверхностью Земли
+        }
         else {
             curr_ht--;
             for (; curr_ht >= 0;) {
@@ -127,7 +182,11 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
                 l_sum += l;
                 curr_ht--;
             }
-            if (b <= 0.1) { c = -c; abc[2] = c; } 
+            if (b <= pp) { 
+                abc = GetLambert(abc);
+                c = abc[2]; 
+                if (c == 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
+            }
             else return(-2); // произошло поглощение частицы поверхностью Земли
         }
     }
@@ -146,6 +205,8 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
     for (; curr_ht < 100;) {
         ln_prev = ln_new;
         l = 1 / c;
+        if (d[Lnum][curr_ht] < 0.00000001)
+            return -1;
         ln_new = ln_prev - l * d[Lnum][curr_ht];
         if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
 
@@ -156,12 +217,20 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc) {
 
 // проверка вылета из среды 
 // вычисление координат очередной точки столкновения
-double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double c) {
-    if ((c != abc[2]) & (c != 0)) {
-        xyz[0] = xyz[0] + abc[0] * l;
-        xyz[1] = xyz[1] + abc[1] * l;
-        l = l - xyz[2] / abs(c);
-        xyz[2] = abc[2] * l;
+double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double* abc_prev) {
+    if ((abc_prev[2] != abc[2]) & (abs(abc_prev[2]) != 0)) {
+        double l1 = xyz[2] / abs(abc_prev[2]), l2 = l - l1;
+
+        xyz[0] = xyz[0] + abc_prev[0] * l1;
+        xyz[1] = xyz[1] + abc_prev[1] * l1;
+        xyz[2] = xyz[2] + abc_prev[2] * l1;
+
+        if (abs(xyz[2]) > 0.000001)
+            int y = 0;
+
+        xyz[0] = xyz[0] + abc[0] * l2;
+        xyz[1] = xyz[1] + abc[1] * l2;
+        xyz[2] = xyz[2] + abc[2] * l2;
     }
 
     else {
@@ -184,12 +253,13 @@ bool ModelPerenosa::P5type(int Lnum, double** d, double* xyz) {
 }
 
 // пересчет координат направления пробега
-double* ModelPerenosa::P7napravl(double* abc, double m) {
+double* ModelPerenosa::P7napravl(float* mass, double** F, int Lnum, double* abc) {
     double* fi = new double[2], abct[3]; 
-    double c = 1;
+    double c = 1, m = 1;
     for (int i = 0; i < 3; i++)
         abct[i] = abc[i];
-    while ((c == 1) || (c == -1)) {
+    while ((!((abc[2]>=-1)&((abc[2] <= 1)))) || (abs(c) == 1) || (abs(m)==1)) {
+        m = getMa(mass, F, Lnum);
         fi = GetFi(fi);
 
         abc[0] = abct[0] * m - (abct[1] * fi[1] + abct[0] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
@@ -210,27 +280,30 @@ void ModelPerenosa::Cout_xyz(double* xyz) {
 }
 
 // функция для моделирования процесса переноса
-int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
-    double* abc = new double[3], * xyz = new double[3];
-    double l, m, c;
+int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double pp) {
+    double* abc = new double[3], * xyz = new double[3], * abc_prev = new double[3];
+    double l;
 
     for (int i = 0; i < 3; i++)
         abc[i] = 0;
     for (int i = 0; i < 3; i++)
         xyz[i] = 0;
 
-    abc = P1st_point(abc);
+    abc = GetIzotr(abc);
 
     for (;;) {
-        c = abc[2];
-        l = P2length(Lnum, d, xyz[2], abc);
-        if ((!(l >= 0)) & (l != -1) & (l != -2))
-            int y = 0;
+        for (int i = 0; i < 3; i++)
+            abc_prev[i] = abc[i];
+        l = P2length(Lnum, d, xyz[2], abc, pp);
+        while ((!(l >= 0)) & (l != -1) & (l != -2))
+            l = P2length(Lnum, d, xyz[2], abc, pp);
+
         if (l == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
             CrossUp(abc[2]);
             delete[]abc;
+            delete[]abc_prev;
             delete[]xyz;
             return 1;
         }
@@ -241,10 +314,11 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
             // Произошло поглощение частицы поверхностью Земли
             CrossLow(abc[2]);
             delete[]abc;
+            delete[]abc_prev;
             delete[]xyz;
             return 0;
         }
-        xyz = P3P4calcul(xyz, abc, l, c);
+        xyz = P3P4calcul(xyz, abc, l, abc_prev);
         //Cout_xyz(xyz);
         /*if (xyz[2] < 0)
         {
@@ -263,23 +337,24 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d) {
         if (P5type(Lnum, d, xyz)) {
             // Произошло поглощение
             delete[]abc;
+            delete[]abc_prev;
             delete[]xyz;
             return 2;
         }
-        m = getMa(mass, F, Lnum);
-        abc = P7napravl(abc, m);
+
+        abc = P7napravl(mass, F, Lnum, abc);
 
     }
 
 }
 
-int* ModelPerenosa::NModPer(int* t, float* mass, double** F, int Lnum, double** d)
+int* ModelPerenosa::NModPer(int* t, float* mass, double** F, int Lnum, double** d, double pp)
 {
     int k;
     for (int i = 0; i < 3; i++)
         t[i] = 0;
     for (int i = 0; i < kol; i++) {
-        k = ModPer(mass, F, Lnum, d);
+        k = ModPer(mass, F, Lnum, d, pp);
         t[k]++;
     }
 
@@ -309,7 +384,7 @@ void ModelPerenosa::OutToFile(double** tBig, double* waves)
     out.close();
 }
 
-void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double** d)
+void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double** d, double pp)
 {
     int* t = new int[3];
     double** tBig = new double* [5];
@@ -319,7 +394,7 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
     {
         SetSum0();
         std::cout << "Данные для длины волны l=" << waves[i] << " мкм: " << std::endl << std::endl;
-        t = NModPer(t, mass, F, i, d);
+        t = NModPer(t, mass, F, i, d, pp);
         std::cout << "Произошло " << t[0] << " поглощений частиц поверхностью Земли. " << std::endl;
         std::cout << "Произошло " << t[1] << " вылетов за пределы среды через верхнюю границу. " << std::endl;
         std::cout << "Произошло " << t[2] << " поглощений. " << std::endl;
