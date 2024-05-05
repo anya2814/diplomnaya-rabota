@@ -110,14 +110,18 @@ void ModelPerenosa::SetSum0()
 
 double* ModelPerenosa::P1st_point(double* abc) {
     double* fi = new double[2];
+    fi = GetFi(fi);
 
-    abc[2] = sqrt(1 - 2 * GetA());
+    double cost = sqrt(GetA());
 
-    double m = 1 - abc[2] * abc[2];
-    fi = GetFi(fi, m);
+    double cosf = fi[0], sinf = fi[1]; // косинус фи
+    double sint = sqrt(1 - cost * cost);    // синус тета
 
-    abc[0] = fi[0];
-    abc[1] = fi[1];
+    abc[0] = sint * cosf;
+    abc[1] = sint * sinf;
+    abc[2] = cost;
+
+    delete[]fi;
 
     return abc;
 }
