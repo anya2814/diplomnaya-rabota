@@ -3,7 +3,7 @@
 // получение случайного вещественного числа от 0 до 1
 double ModelPerenosa::GetA() {
     double a;
-    a = (rand() % 1001) / 1000.;
+    a = (rand() % 32767) / 32767.;
     return a;
 }
 
@@ -81,7 +81,7 @@ double* ModelPerenosa::P1st_point(double* abc) {
 
 // выбор длины свободного пробега l
 void ModelPerenosa::P2length(int Lnum, double** d, double* xyz, double* abc, double* lopt, bool f) {
-    double a = GetA(), l;
+    double a = GetA();
     double l = -log(a);    //  
     double c = abc[2];          // косинус угла к поверхности Земли
 
