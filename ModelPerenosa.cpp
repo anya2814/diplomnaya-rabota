@@ -3,7 +3,7 @@
 // получение случайного вещественного числа от 0 до 1
 double ModelPerenosa::GetA() {
     double a;
-    a = (rand() % 1001) / 1000.;
+    a = (rand() % 32767) / 32767.;
     return a;
 }
 

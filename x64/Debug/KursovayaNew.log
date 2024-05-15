@@ -1,6 +1,3 @@
-﻿  ModelPerenosa.cpp
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(131,17): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(204,17): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(184): warning C4715: ModelPerenosa::P2length: значение возвращается не при всех путях выполнения
-  LINK : не найден или не выполнена сборка C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\x64\Debug\KursovayaNew.exe при последней инкрементной компоновке; выполняется полная компоновка
+﻿  KursovayaNew.cpp
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\KursovayaNew.cpp(11,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
   KursovayaNew.vcxproj -> C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\x64\Debug\KursovayaNew.exe

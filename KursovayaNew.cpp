@@ -34,13 +34,13 @@ int main()
     
     // вывод в файл вероятности что l больше 
     std::ofstream out;
-    out.open("L probability.txt");      // открываем файл для записи
+    out.open("L probability.txt", std::ios::app);      // открываем файл для записи
     if (out.is_open())
     {
-        out.clear();
-        out << "Waves" << '\t' << "Probability" << std::endl;
+        //out.clear();
+        //out << "Waves" << '\t' << "Probability" << std::endl;
         for (int i = 0; i < 5; i++)
-            out << waves[i] << '\t' << objModel.GetL(i)/(kol*1.0) << std::endl;
+            out /*<< waves[i] << '\t' */<< objModel.GetL(i)/(kol*1.0) << std::endl;
     }
     out.close();
     
