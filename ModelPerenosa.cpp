@@ -3,7 +3,7 @@
 // получение случайного вещественного числа от 0 до 1
 double ModelPerenosa::GetA() {
     double a;
-    a = (rand() % 1001) / 1000.;
+    a = (rand() % 32767) / 32767.;
     return a;
 }
 
@@ -223,6 +223,9 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double*
         c = abc[2];
         l = P2length(Lnum, d, xyz, abc, lopt, f);
         f = false;
+        delete[]abc;
+        delete[]xyz;
+        return 1;
         if (l == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
