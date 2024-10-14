@@ -3,7 +3,7 @@
 // получение случайного вещественного числа от 0 до 1
 double ModelPerenosa::GetA() {
     double a;
-    a = (rand() % 1001) / 1000.;
+    a = (rand() % 32767) / 32767.;
     return a;
 }
 
@@ -52,8 +52,6 @@ double* ModelPerenosa::GetFi(double* fi, double m) {
 // учет пересечений верхней площадки с весом 1/|(ns, w)|
 void ModelPerenosa::CrossUp(double add)
 {
-    if ((1.0 / (kol * abs(add))) > 100)
-        int i = 1;
     sumUp = sumUp + 1.0 / (kol * abs(add));
 }
 
@@ -78,23 +76,6 @@ void ModelPerenosa::SetSum0()
     sumLow = 0;
     sumUp = 0;
 }
-
-// выбор направления для ламбертовского распределения
-/*double* ModelPerenosa::GetLambert(double* abc) {
-    double* fi = new double[2];
-
-    abc[2] = sqrt(GetA());
-
-    double m = 1 - abc[2] * abc[2];
-    fi = GetFi(fi, m);
-
-    abc[0] = fi[0];
-    abc[1] = fi[1];
-
-    delete []fi;
-
-    return abc;
-}*/
 
 // выбор направления для ламбертовского распределения
 double* ModelPerenosa::GetLambert(double* abc) {
@@ -225,9 +206,6 @@ double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double* ab
         xyz[1] = xyz[1] + abc_prev[1] * l1;
         xyz[2] = xyz[2] + abc_prev[2] * l1;
 
-        if (abs(xyz[2]) > 0.000001)
-            int y = 0;
-
         xyz[0] = xyz[0] + abc[0] * l2;
         xyz[1] = xyz[1] + abc[1] * l2;
         xyz[2] = xyz[2] + abc[2] * l2;
@@ -295,8 +273,6 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double 
         for (int i = 0; i < 3; i++)
             abc_prev[i] = abc[i];
         l = P2length(Lnum, d, xyz[2], abc, pp);
-        while ((!(l >= 0)) & (l != -1) & (l != -2))
-            l = P2length(Lnum, d, xyz[2], abc, pp);
 
         if (l == -1)
         {
@@ -319,21 +295,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double 
             return 0;
         }
         xyz = P3P4calcul(xyz, abc, l, abc_prev);
-        //Cout_xyz(xyz);
-        /*if (xyz[2] < 0)
-        {
-            xyz[2] = -xyz[2];
-            abc[2] = abc[2] + 0.5;
-            // Произошло отражение частицы от поверхности земли
-        }*/
-        /*if (xyz[2] > h)
-        {
-            // Произошел вылет за пределы среды через верхнюю границу
-            CrossUp(abc[2]);
-            delete[]abc;
-            delete[]xyz;
-            return 1;
-        }*/
+
         if (P5type(Lnum, d, xyz)) {
             // Произошло поглощение
             delete[]abc;
@@ -375,10 +337,10 @@ void ModelPerenosa::OutToFile(double** tBig, double* waves)
     out.open("Results.txt");      // открываем файл для записи
     if (out.is_open())
     {
-        out << "Waves\tKtAbsorption\tKtUpCross\tKtUpCrossWeight\tKtLowCross\tKtLowCrossWeight" << std::endl;
+        out << "Waves\tKtAbsorption\tKtUpCross\tUpCross\tKtLowCross\tLowCross" << std::endl;
         for (int i = 0; i < 5; i++) {
-            out << waves[i] << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2] / (kol * 1.0);
-            out << '\t' << tBig[i][3] / (kol * 1.0) << '\t' << tBig[i][4] / (kol * 1.0) << std::endl;
+            out << waves[i] << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2];
+            out << '\t' << tBig[i][3] / (kol * 1.0) << '\t' << tBig[i][4] << std::endl;
         }
     }
     out.close();
@@ -403,8 +365,8 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
         CountK(t);
 
         std::cout << std::endl;
-        std::cout << "Коэффициент пересечения верхней границы с учетом веса: " << GetSumUp() << std::endl;
-        std::cout << "Коэффициент поглощения нижней границей с учетом веса: " << GetSumLow() << std::endl << std::endl << std::endl;
+        std::cout << "Поток через верхнюю границу: " << GetSumUp() << std::endl;
+        std::cout << "Поток через нижнюю границу: " << GetSumLow() << std::endl << std::endl << std::endl;
         
         tBig[i][0] = t[2];
         tBig[i][1] = t[1];

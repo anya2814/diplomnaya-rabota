@@ -27,7 +27,7 @@ int main()
 
     ModelPerenosa objModel;
 
-    double pp = 0.125;   // задаем альбедо подстилающей поверхности
+    double pp = 0.35;   // задаем альбедо подстилающей поверхности
 
     // моделирование процессов переноса
     objModel.Modelirovanie(mass, F, waves, d, pp);

@@ -16,6 +16,5 @@ public:
 	double** getF(double** F, float* mass);
 	float* getM(float* mass);
 	double** getd(double** d, double* waves);
-	//void writeF(double** F);
 };
 

@@ -129,24 +129,5 @@ double** Data::getF(double** F, float* mass)
         delete[]ind[i];
     delete[]ind;
 
-    //writeF(F);
-
     return F;
 }
-
-/*void Data::writeF(double** F)
-{
-    std::ofstream H;
-    H.open("F.txt");
-    H.clear();
-    if (H.is_open())
-    {
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < 4; j++)
-                H << F[i][j] << " ";
-            H << F[i][4];
-            H << std::endl;
-        }
-    }
-    H.close();
-}*/
