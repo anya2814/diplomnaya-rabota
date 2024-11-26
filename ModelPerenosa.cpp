@@ -78,7 +78,7 @@ void ModelPerenosa::SetSum0()
 }
 
 // выбор направления для ламбертовского распределения
-void ModelPerenosa::GetLambert(double* abc, double *xyz) {
+void ModelPerenosa::GetLambert(double* abc) {
     double* fi = new double[2];
     fi = GetFi(fi);
 
@@ -97,7 +97,7 @@ void ModelPerenosa::GetLambert(double* abc, double *xyz) {
 }
 
 // выбор направления для изотропного распределения
-void ModelPerenosa::GetIzotr(double* abc, double* xyz) {
+void ModelPerenosa::GetIzotr(double* abc) {
     double* fi = new double[2];
     fi = GetFi(fi);
 
@@ -259,11 +259,106 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& koef_o
 }
 
 bool ModelPerenosa::Reflection(double* xyz, double* abc) {
-    double v_length = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
-    double v[3]{ xyz[0] / v_length, xyz[1] / v_length, xyz[2] / v_length }; // нормированный вектор нормали к плоскости от которой отражается частица
+    // abc1 - вектор нормали к плоскости от которой отражается частица
+    // abc2 = abc - направление до отражения
+    // abc3 - направление после отражения
 
-    // находим разницу a, b и c между abc и v
-    return abc;
+    // old basis - старый базис, основаный на abc1, вызывая функцию GetIzotr или GetLambert получаем координаты отраженного вектора abc3 в нем
+
+    // если зеркальное отражение: abc3 = (0, sqrt(1-c3^2), c3)
+    // c3 = cos teta = - a1*a2 - b1*b2 - c1*c2
+
+    // new basis - новый базис
+    // e1_old = (1,0,0)
+    // e2_old = (0,1,0)
+    // e3_old = (0,0,1)
+    return 1;
+
+    double abc2[3]{ abc[0], abc[1], abc[2] }; // задали abc2
+    double abc3[3]{ 0, 0, 0 };
+    double e1_old[3]{ 0, 0, 0 }; double e2_old[3]{ 0, 0, 0 }; double e3_old[3]{ 0, 0, 0 }; 
+    double e1_new[3]{ 1, 0, 0 }; double e2_new[3]{ 0, 1, 0 }; double e3_new[3]{ 0, 0, 1 };  // задали новый базис
+
+    double** a = new double* [3];   // матрица перехода к новому базису
+    for (int i = 0; i < 3; i++)
+        a[i] = new double[3];
+
+    double v_length = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
+    double abc1[3]{ xyz[0] / v_length, xyz[1] / v_length, xyz[2] / v_length }; // задали abc1
+
+    // 1) находим координаты abc3 в старом базисе eсли отражение зеркальное
+    bool zerkalnoe_otrazhenie = true;
+    if (zerkalnoe_otrazhenie) {
+        abc3[2] = -abc1[0] * abc2[0] - abc1[1] * abc2[1] - abc1[2] * abc2[2];
+        abc3[1] = sqrt(1 - abc3[2]);
+    }
+
+    // если изотропное:
+    // GetIzotr(abc);
+    // abc3[0] = abc[0]; abc3[1] = abc[1]; abc3[2] = abc[2]; 
+    // если Ламбертовское:
+    // GetIzotr(abc);
+    // abc3[0] = abc[0]; abc3[1] = abc[1]; abc3[2] = abc[2]; 
+
+    // 2) находим e3_old
+    e3_old[0] = abc1[0]; e3_old[1] = abc1[1]; e3_old[2] = abc1[2]; // задали e3 старого базиса
+
+    // 3) находим e2_old. это пересечение двух плоскостей. первая - точка(0,0,0), abc1, abc2, вторая - перпендикулярна abc1
+    // уравнение первой плоскости будет: A1 * x + B1 * y + C1 * z = 0
+    // x abc1[0] abc2[0]
+    // y abc1[1] abc2[1]
+    // z abc1[2] abc2[2]
+    double A1 = abc1[1] * abc2[2] - abc2[1] * abc1[2];
+    double B1 = -abc1[0] * abc2[2] + abc2[0] * abc1[2];
+    double C1 = abc1[0] * abc2[1] - abc2[0] * abc1[1];
+
+    // уравнение второй плоскости будет: A2 * x + B2 * y + C2 * z = 0
+    double A2 = abc1[0], B2 = abc1[1], C2 = abc1[2];
+
+    // направляющий вектор прямой пересечения двух плоскостей:
+    e2_old[0] = B1 * C2 - C1 * C2; e2_old[1] = C1 * A2 - A1 * C2; e2_old[2] = A1 * B2 - B1 * A2;
+
+    // выбираем знак (чтобы вектор был по направлению abc2, а не -abc2)
+    if ((e2_old[0] * abc2[0] + e2_old[1] * abc2[1] + e2_old[2] * abc2[2]) >= (-e2_old[0] * abc2[0] - e2_old[1] * abc2[1] - e2_old[2] * abc2[2])) {
+        e2_old[0] = -e2_old[0]; e2_old[1] = -e2_old[1]; e2_old[2] = -e2_old[2];
+    }
+
+    // 4) находим e1_old
+    // i         j          k
+    // e2_old[0] e2_old[1] e2_old[2]
+    // e3_old[0] e3_old[1] e3_old[2]
+    e1_old[0] = e2_old[1] * e3_old[2] - e2_old[2] * e3_old[1];
+    e1_old[1] = -e2_old[0] * e3_old[2] + e2_old[2] * e3_old[0];
+    e1_old[2] = e2_old[0] * e3_old[1] - e2_old[1] * e3_old[0];
+
+    findA(a[0], e1_old, e2_old, e3_old, e1_new);
+    findA(a[1], e1_old, e2_old, e3_old, e2_new);
+    findA(a[2], e1_old, e2_old, e3_old, e3_new);
+
+    abc[0] = a[0][0] * e1_old[0] + a[0][1] * e2_old[0] + a[0][2] * e3_old[0];
+    abc[1] = a[1][0] * e1_old[0] + a[1][1] * e2_old[0] + a[1][2] * e3_old[0];
+    abc[2] = a[2][0] * e1_old[0] + a[2][1] * e2_old[0] + a[2][2] * e3_old[0];
+}
+
+// решение методом Крамера
+void ModelPerenosa::findA(double* a, double e1_old[], double e2_old[], double e3_old[], double e_new[])
+{
+    // вычисление определителя и проверка
+    double det = e1_old[0] * e2_old[1] * e3_old[2] + e2_old[0] * e3_old[1] * e1_old[2] + e1_old[1] * e2_old[2] * e3_old[0] -
+        e1_old[2] * e2_old[1] * e3_old[0] - e1_old[1] * e2_old[0] * e3_old[2] - e3_old[1] * e1_old[0] * e2_old[2];
+    if (det == 0)
+        return;
+
+    double det1 = e_new[0] * e2_old[1] * e3_old[2] + e2_old[0] * e3_old[1] * e_new[2] + e_new[1] * e2_old[2] * e3_old[0] -
+        e_new[2] * e2_old[1] * e3_old[0] - e_new[1] * e2_old[0] * e3_old[2] - e3_old[1] * e_new[0] * e2_old[2];
+
+    double det2 = e1_old[0] * e_new[1] * e3_old[2] + e_new[0] * e3_old[1] * e1_old[2] + e1_old[1] * e_new[2] * e3_old[0] -
+        e1_old[2] * e_new[1] * e3_old[0] - e1_old[1] * e_new[0] * e3_old[2] - e3_old[1] * e1_old[0] * e_new[2];
+
+    double det3 = e1_old[0] * e2_old[1] * e_new[2] + e2_old[0] * e_new[1] * e1_old[2] + e1_old[1] * e2_old[2] * e_new[0] -
+        e1_old[2] * e2_old[1] * e_new[0] - e1_old[1] * e2_old[0] * e_new[2] - e_new[1] * e1_old[0] * e2_old[2];
+
+    a[0] = det1 / det; a[1] = det2 / det; a[2] = det3 / det;
 }
 
 double ModelPerenosa::GetTequat(double* xyz, double* abc, double R) {
@@ -361,7 +456,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, std::vector<std::ma
     xyz[2] = 6371;
     int f;
 
-    GetIzotr(abc, xyz);
+    GetIzotr(abc);
 
     for (;;) {
         for (int i = 0; i < 3; i++)

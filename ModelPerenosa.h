@@ -23,8 +23,9 @@ class ModelPerenosa
     double* GetFi(double* fi, double m = 1);            // вспомогательная функция для P1 и P7, нахождение косинуса и синуса для выбора начальной точки и пересчета координат направления пробега
     void CrossUp(double add);            // учет пересечений верхней площадки с весом 1/|(ns, w)|
     void CrossLow(double add);         // учет пересечений нижней площадки с весом 1/|(ns, w)|
-    void GetIzotr(double* abc, double *xyz);      // выбор направления для изотропного распределения
-    void GetLambert(double* abc, double* xyz);      // выбор направления для ламбертовского распределения
+    void GetIzotr(double* abc);      // выбор направления для изотропного распределения
+    void GetLambert(double* abc);      // выбор направления для ламбертовского распределения
+    void findA(double *a, double e1_old[], double e2_old[], double e3_old[], double e_new[]);
     int P2length(int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp);                   // выбор длины свободного пробега l
     bool Reflection(double* xyz, double* abc);
     double GetTequat(double* xyz, double* abc, double R); // находим t из квадратного уравнения
