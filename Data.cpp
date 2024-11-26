@@ -16,7 +16,7 @@ double* Data::getWaves(double* wavesLength)
     return wavesLength;
 }
 
-double** Data::getd(double** d, double* waves)
+/*double** Data::getd(double** d, double* waves)
 {
     int* imass = new int[5];
     int pos = 0;
@@ -64,6 +64,72 @@ double** Data::getd(double** d, double* waves)
     H.close();
 
     return d;
+}*/
+
+void Data::getKoefOsl(std::vector<std::map<int, double>> &koef_osl, std::vector<std::map<int, double>> &alb_rass, double* waves)
+{
+    std::map<int, double> temp_map;
+    int imass[5];
+    int pos = 0;
+    double read, h_next;
+    std::ifstream H;
+    H.open("AERO_MOD.txt");
+    if (!H.is_open()) return;
+    for (int i = 0; i < 27; i++) {
+        H >> read;
+        if (read == waves[pos]) {
+            imass[pos] = i;
+            pos++;
+        }
+    }
+    H >> h_next;
+    pos = 0;
+    for (int i = 0; i < 27; i++) {
+        H >> read;
+        if (i == imass[pos]) {
+            temp_map.insert(std::pair<int, double>(h_next, read));
+            koef_osl.push_back(temp_map);
+            temp_map.clear();
+            pos++;
+        }
+    }
+    for (int j = 1; j < 5; j++) {
+        H >> h_next;
+        pos = 0;
+        for (int i = 0; i < 27; i++) {
+            H >> read;
+            if (i == imass[pos])
+            {
+                koef_osl[pos].insert(std::pair<int, double>(h_next, read));
+                pos++;
+            }
+        }
+    }
+
+    H >> h_next;
+    pos = 0;
+    for (int i = 0; i < 27; i++) {
+        H >> read;
+        if (i == imass[pos]) {
+            temp_map.insert(std::pair<int, double>(h_next, read));
+            alb_rass.push_back(temp_map);
+            temp_map.clear();
+            pos++;
+        }
+    }
+    for (int j = 1; j < 3; j++) {
+        H >> h_next;
+        pos = 0;
+        for (int i = 0; i < 27; i++) {
+            H >> read;
+            if (i == imass[pos]) 
+            {
+                alb_rass[pos].insert(std::pair<int, double>(h_next, read));
+                pos++;
+            }
+        }
+    }
+    H.close();
 }
 
 // вспомогательная функция для P6

@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <cmath>
+#include <vector>
+#include <map>
 #include <fstream>
 
 // double abc[3] - массив a, b и с
@@ -10,7 +12,7 @@
 
 static const int N = 204; // число заданных значений F и m в файле
 const double h = 30; // верхняя граница z
-const int kol = 1000000; // количество моделируемых пробегов частиц
+const int kol = 100000; // количество моделируемых пробегов частиц
 
 class ModelPerenosa
 {
@@ -21,11 +23,12 @@ class ModelPerenosa
     double* GetFi(double* fi, double m = 1);            // вспомогательная функция для P1 и P7, нахождение косинуса и синуса для выбора начальной точки и пересчета координат направления пробега
     void CrossUp(double add);            // учет пересечений верхней площадки с весом 1/|(ns, w)|
     void CrossLow(double add);         // учет пересечений нижней площадки с весом 1/|(ns, w)|
-    double* GetIzotr(double* abc);      // выбор направления для изотропного распределения
-    double* GetLambert(double* abc);      // выбор направления для ламбертовского распределения
-    double P2length(int Lnum, double** d, double z, double* abc, double pp);                   // выбор длины свободного пробега l
-    double* P3P4calcul(double*, double*, double, double*);   // проверка вылета из среды, вычисление координат очередной точки столкновения
-    bool P5type(int Lnum, double** d, double* xyz);                      // выбор типа столкновения (поглощение или рассеяние)
+    void GetIzotr(double* abc, double *xyz);      // выбор направления для изотропного распределения
+    void GetLambert(double* abc, double* xyz);      // выбор направления для ламбертовского распределения
+    int P2length(int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp);                   // выбор длины свободного пробега l
+    bool Reflection(double* xyz, double* abc);
+    double GetTequat(double* xyz, double* abc, double R); // находим t из квадратного уравнения
+    bool P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz);                      // выбор типа столкновения (поглощение или рассеяние)
     double* P7napravl(float* mass, double** F, int Lnum, double* abc);      // пересчет координат направления пробега
     void Cout_xyz(double* xyz);
     void OutToFile(double** tBig, double* waves);
@@ -35,8 +38,8 @@ public:
     double GetSumLow();
     void SetSum0();
     void CountK(int* t);
-    int ModPer(float* mass, double** F, int Lnum, double** d, double pp);
-    int* NModPer(int* t, float* mass, double** F, int Lnum, double** d, double pp);
-    void Modelirovanie(float* mass, double** F, double* waves, double** d, double pp);
+    int ModPer(float* mass, double** F, int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp);
+    int* NModPer(int* t, float* mass, double** F, int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp);
+    void Modelirovanie(float* mass, double** F, double* waves, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp);
 };
 

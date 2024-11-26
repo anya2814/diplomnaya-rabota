@@ -4,6 +4,7 @@
 #include <fstream>
 #include <time.h>
 #include<vector>
+#include <map>
 #include "ModelPerenosa.h"
 
 #define PI 3.14159265
@@ -15,6 +16,6 @@ public:
 	double* getWaves(double* waves);
 	double** getF(double** F, float* mass);
 	float* getM(float* mass);
-	double** getd(double** d, double* waves);
+	void getKoefOsl(std::vector<std::map<int, double>> &koef_osl, std::vector<std::map<int, double>> &alb_rass, double* waves);
 };
 

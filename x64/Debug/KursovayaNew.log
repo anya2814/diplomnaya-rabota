@@ -1,5 +1,27 @@
-﻿  ModelPerenosa.cpp
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(127,17): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(226,17): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(197): warning C4715: ModelPerenosa::P2length: значение возвращается не при всех путях выполнения
+﻿  Data.cpp
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(149,26): warning C4244: =: преобразование "double" в "float", возможна потеря данных
+C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.27.29110\include\utility(192,16): warning C4244: инициализация: преобразование "double" в "_Ty1", возможна потеря данных
+          with
+          [
+              _Ty1=int
+          ]
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(90): message : выполняется компиляция ссылки на экземпляр шаблон функции "std::pair<int,double>::pair<double&,double&,0>(_Other1,_Other2) noexcept"
+          with
+          [
+              _Other1=double &,
+              _Other2=double &
+          ]
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\Data.cpp(90): message : выполняется компиляция ссылки на экземпляр шаблон функции "std::pair<int,double>::pair<double&,double&,0>(_Other1,_Other2) noexcept"
+          with
+          [
+              _Other1=double &,
+              _Other2=double &
+          ]
+  KursovayaNew.cpp
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\KursovayaNew.cpp(12,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
+  ModelPerenosa.cpp
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(197,12): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(317,17): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+  Создание кода...
+C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\ModelPerenosa.cpp(259): warning C4715: ModelPerenosa::P2length: значение возвращается не при всех путях выполнения
   KursovayaNew.vcxproj -> C:\Users\ivank\Desktop\4 курс\Курсовая\KursovayaNew\diplomnaya rabota\x64\Debug\KursovayaNew.exe

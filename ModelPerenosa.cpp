@@ -78,7 +78,7 @@ void ModelPerenosa::SetSum0()
 }
 
 // выбор направления для ламбертовского распределения
-double* ModelPerenosa::GetLambert(double* abc) {
+void ModelPerenosa::GetLambert(double* abc, double *xyz) {
     double* fi = new double[2];
     fi = GetFi(fi);
 
@@ -93,16 +93,11 @@ double* ModelPerenosa::GetLambert(double* abc) {
     abc[1] = sint * sinf;
     abc[2] = cost;
 
-    if ((abc[0] * abc[0] + abc[1] * abc[1] + abc[2] * abc[2] - 1) > 0.00000001)
-        int y = 0;
-
     delete[]fi;
-
-    return abc;
 }
 
 // выбор направления для изотропного распределения
-double* ModelPerenosa::GetIzotr(double* abc) {
+void ModelPerenosa::GetIzotr(double* abc, double* xyz) {
     double* fi = new double[2];
     fi = GetFi(fi);
 
@@ -118,12 +113,10 @@ double* ModelPerenosa::GetIzotr(double* abc) {
     abc[2] = cost;
 
     delete[]fi;
-
-    return abc;
 }
 
-// выбор длины свободного пробега l
-double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, double pp) {
+// ПРЕДЫДУЩАЯ ФУНКЦИЯ выбор длины свободного пробега l
+/*double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, double pp) {
     int curr_ht = z / 1;        // слой в котором находится частица
     double a = GetA(), b = GetA(), l;
     double ln_prev = -log(a), ln_new, l_sum = 0;    //  
@@ -194,11 +187,109 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
         l_sum += l;
         curr_ht++;
     }
+}*/
+
+
+
+// НОВАЯ ФУНКЦИЯ выбор длины свободного пробега l + проверка вылета из среды 
+// вычисление координат очередной точки столкновения
+int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp) {
+    int ht = sqrt(xyz[2]*xyz[2] + xyz[1]*xyz[1] + xyz[0]*xyz[0]) / 1 - 6371;
+    std::map<int, double>::iterator curr_ht_ko; // слой в котором находится частица для коэффициента ослабления  
+                                                // (0 - 0-3 км, 1 - 3-13 км, 2 - 13-25 км, 3 - 25-35 км, 4 - 35-100 км, где ко = 0)
+    for (std::map<int, double>::iterator it = koef_osl[Lnum].begin(); it != koef_osl[Lnum].end(); it++) {
+        if (ht >= it->first) curr_ht_ko = it; // указатель на std::pair где находится текущий коэффициент ослабления    
+    }
+
+    double a = 0, t = 1, R, l_opt;//, l_real = 0;    // t - текущая длина пробега
+    double c = abc[2];          // косинус угла к поверхности Земли
+
+    while ((a == 0) || (a == 1)) {  // чтобы не брать логарифмы от 0 и 1
+        a = GetA();
+    }
+    l_opt = -log(a);
+
+    double temp = 0; // временная переменная для проверки
+
+    // цикл пока частица летит внутрь
+    while (t != -1 && t!= 0) {
+        R = curr_ht_ko->first + 6371.0; // радиус сферы
+        t = GetTequat(xyz, abc, R);
+        if (t != -1 && t != 0) {
+            temp = l_opt - t * curr_ht_ko->second; // от общей оптической длины отнимаем сколько частица пролетает до слоя
+            if (temp <= 0) t = l_opt/curr_ht_ko->second;
+            else l_opt = l_opt - t * curr_ht_ko->second;
+            //l_real = l_real + t;    // реальная длина пробега
+            xyz[0] = xyz[0] + abc[0] * t; // координаты пересечения со сферой
+            xyz[1] = xyz[1] + abc[1] * t;
+            xyz[2] = xyz[2] + abc[2] * t;
+            if (temp <= 0) return 1;
+            if (curr_ht_ko == koef_osl[Lnum].begin()) {     // если летев внутрь частица сталкивается с поверхностью Земли
+                temp = Reflection(xyz, abc); 
+                if (temp) return -2;
+            } 
+            else curr_ht_ko--; // частица летит вниз
+        }
+    }
+    
+    t = 0;
+    if (curr_ht_ko == koef_osl[Lnum].end()) return -1;
+
+    auto next = curr_ht_ko;
+    next++;
+
+    for (; next != koef_osl[Lnum].end(); ++curr_ht_ko) {
+        R = next->first + 6371.0; // радиус сферы
+        t = GetTequat(xyz, abc, R);
+        if (t == -1) {
+            return 0;
+        }
+        temp = l_opt - t * curr_ht_ko->second;
+        if (temp <= 0) t = l_opt / curr_ht_ko->second;
+        else l_opt = l_opt - t * curr_ht_ko->second;
+        xyz[0] = xyz[0] + abc[0] * t; // координаты пересечения со сферой
+        xyz[1] = xyz[1] + abc[1] * t;
+        xyz[2] = xyz[2] + abc[2] * t;
+        if (temp <= 0) return 1;
+        next++;
+    }
+
+    // если частица когда-либо оказалась в слое с нулевым коэффициентом, она вылетает за пределы атмосферы
+    if (next == koef_osl[Lnum].end()) return -1;
+}
+
+bool ModelPerenosa::Reflection(double* xyz, double* abc) {
+    double v_length = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
+    double v[3]{ xyz[0] / v_length, xyz[1] / v_length, xyz[2] / v_length }; // нормированный вектор нормали к плоскости от которой отражается частица
+
+    // находим разницу a, b и c между abc и v
+    return abc;
+}
+
+double ModelPerenosa::GetTequat(double* xyz, double* abc, double R) {
+    int xyz0[3]{ 0,0,0 };
+    double D, x1, x2;
+    double b = 2 * abc[0] * (xyz[0] - xyz0[0]) + 2 * abc[1] * (xyz[1] - xyz0[1]) + 2 * abc[2] * (xyz[2] - xyz0[2]);
+    double a = abc[0] * abc[0] + abc[1] * abc[1] + abc[2] * abc[2];
+    D = pow(b, 2) - 4 * a * (pow((xyz[0]-xyz0[0]),2) + pow((xyz[1] - xyz0[1]), 2) + pow((xyz[2] - xyz0[2]), 2) - R*R);
+    if (D < 0) return -1;
+    else if (D == 0) {
+        x1 = -b / (2 * a);
+        if (x1 >= 0) return x1; else return -1;
+    }
+    else {
+        x1 = (-b - sqrt(D)) / (2 * a);
+        x2 = (-b + sqrt(D)) / (2 * a);
+        if (x1 >= 0 && x2 >= 0) return std::min(x1, x2);
+        if (x1 >= 0 && x2 < 0) return x1;
+        if (x1 < 0 && x2 >= 0) return x2;
+        else return -1;
+    };
 }
 
 // проверка вылета из среды 
 // вычисление координат очередной точки столкновения
-double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double* abc_prev) {
+/*double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double* abc_prev) {
     if ((abc_prev[2] != abc[2]) & (abs(abc_prev[2]) != 0)) {
         double l1 = xyz[2] / abs(abc_prev[2]), l2 = l - l1;
 
@@ -218,15 +309,17 @@ double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double* ab
     };
 
     return xyz;
-}
+}*/
 
 // выбор типа столкновения (поглощение или рассеяние)
-bool ModelPerenosa::P5type(int Lnum, double** d, double* xyz) {
+bool ModelPerenosa::P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz) {
     double a = GetA();
-    int curr_ht = xyz[2] / 1;
-    double Ps = d[Lnum][100 + curr_ht];// / d[Lnum][curr_ht];
+    int curr_ht = xyz[2] / 1, curr_ht_pos = -1;
+    for (std::map<int, double>::iterator it = alb_rass[Lnum].begin(); it != alb_rass[Lnum].end(); it++) {
+        if (curr_ht >= it->first) curr_ht_pos++;
+    }
 
-    if (a < Ps) return 0; // произошло рассеяние
+    if (a < alb_rass[Lnum][curr_ht_pos]) return 0; // произошло рассеяние
     else return 1; // произошло поглощение
 }
 
@@ -258,23 +351,24 @@ void ModelPerenosa::Cout_xyz(double* xyz) {
 }
 
 // функция для моделирования процесса переноса
-int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double pp) {
-    double* abc = new double[3], * xyz = new double[3], * abc_prev = new double[3];
-    double l;
-
+int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp) {
+    
+    double* abc = new double[3], * abc_prev = new double[3], * xyz = new double[3];
     for (int i = 0; i < 3; i++)
-        abc[i] = 0;
+        abc[i] = 0; 
     for (int i = 0; i < 3; i++)
         xyz[i] = 0;
+    xyz[2] = 6371;
+    int f;
 
-    abc = GetIzotr(abc);
+    GetIzotr(abc, xyz);
 
     for (;;) {
         for (int i = 0; i < 3; i++)
             abc_prev[i] = abc[i];
-        l = P2length(Lnum, d, xyz[2], abc, pp);
+        f = P2length(Lnum, koef_osl, alb_rass, xyz, abc, pp);
 
-        if (l == -1)
+        if (f == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
             CrossUp(abc[2]);
@@ -285,7 +379,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double 
         }
         //cout << "l = " << l << endl;
 
-        if (l == -2)
+        if (f == -2)
         {
             // Произошло поглощение частицы поверхностью Земли
             CrossLow(abc[2]);
@@ -294,9 +388,9 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double 
             delete[]xyz;
             return 0;
         }
-        xyz = P3P4calcul(xyz, abc, l, abc_prev);
+        //xyz = P3P4calcul(xyz, abc, l, abc_prev);
 
-        if (P5type(Lnum, d, xyz)) {
+        if (P5type(Lnum, alb_rass, xyz)) {
             // Произошло поглощение
             delete[]abc;
             delete[]abc_prev;
@@ -310,13 +404,13 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double 
 
 }
 
-int* ModelPerenosa::NModPer(int* t, float* mass, double** F, int Lnum, double** d, double pp)
+int* ModelPerenosa::NModPer(int* t, float* mass, double** F, int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp)
 {
     int k;
     for (int i = 0; i < 3; i++)
         t[i] = 0;
     for (int i = 0; i < kol; i++) {
-        k = ModPer(mass, F, Lnum, d, pp);
+        k = ModPer(mass, F, Lnum, koef_osl, alb_rass, pp);
         t[k]++;
     }
 
@@ -346,7 +440,7 @@ void ModelPerenosa::OutToFile(double** tBig, double* waves)
     out.close();
 }
 
-void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double** d, double pp)
+void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp)
 {
     int* t = new int[3];
     double** tBig = new double* [5];
@@ -356,7 +450,7 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
     {
         SetSum0();
         std::cout << "Данные для длины волны l=" << waves[i] << " мкм: " << std::endl << std::endl;
-        t = NModPer(t, mass, F, i, d, pp);
+        t = NModPer(t, mass, F, i, koef_osl, alb_rass, pp);
         std::cout << "Произошло " << t[0] << " поглощений частиц поверхностью Земли. " << std::endl;
         std::cout << "Произошло " << t[1] << " вылетов за пределы среды через верхнюю границу. " << std::endl;
         std::cout << "Произошло " << t[2] << " поглощений. " << std::endl;
