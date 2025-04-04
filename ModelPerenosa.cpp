@@ -267,7 +267,8 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double 
     for (int i = 0; i < 3; i++)
         xyz[i] = 0;
 
-    abc = GetIzotr(abc);
+    abc[0] = 0; abc[1] = sqrt(1-0.999*0.999); abc[2] = 0.999;
+    //abc = GetIzotr(abc);
 
     for (;;) {
         for (int i = 0; i < 3; i++)
