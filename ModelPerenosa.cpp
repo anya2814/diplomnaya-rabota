@@ -164,8 +164,9 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
                 curr_ht--;
             }
             if (b <= pp) { 
-                abc = GetLambert(abc);
+                abc[2] = -abc[2];
                 c = abc[2]; 
+                b = GetA();
                 if (c == 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
             }
             else return(-2); // произошло поглощение частицы поверхностью Земли
@@ -267,8 +268,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double 
     for (int i = 0; i < 3; i++)
         xyz[i] = 0;
 
-    abc[0] = 0; abc[1] = sqrt(1-0.999*0.999); abc[2] = 0.999;
-    //abc = GetIzotr(abc);
+    abc = GetIzotr(abc);
 
     for (;;) {
         for (int i = 0; i < 3; i++)
