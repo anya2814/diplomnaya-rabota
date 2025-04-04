@@ -14,8 +14,8 @@ class Data
 public:
 	Data() {};
 	double* getWaves(double* waves);
-	double** getF(double** F, float* mass);
-	float* getM(float* mass);
+	double** getF(double** F, float* angles);
+	float* getM(float* angles);
 	void getKoefOsl(std::vector<std::map<int, double>> &koef_osl, std::vector<std::map<int, double>> &alb_rass, double* waves);
 };
 

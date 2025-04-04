@@ -12,7 +12,7 @@
 
 static const int N = 204; // число заданных значений F и m в файле
 const double h = 30; // верхняя граница z
-const int kol = 100000; // количество моделируемых пробегов частиц
+const int kol = 1000000; // количество моделируемых пробегов частиц
 
 class ModelPerenosa
 {
@@ -26,9 +26,10 @@ class ModelPerenosa
     void GetIzotr(double* abc);      // выбор направления для изотропного распределения
     void GetLambert(double* abc);      // выбор направления для ламбертовского распределения
     void findA(double *a, double e1_old[], double e2_old[], double e3_old[], double e_new[]);
-    int P2length(int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp);                   // выбор длины свободного пробега l
-    bool Reflection(double* xyz, double* abc);
-    double GetTequat(double* xyz, double* abc, double R); // находим t из квадратного уравнения
+    int P2length(int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp, int type);                   // выбор длины свободного пробега l
+    bool Reflection(int Lnum, double* xyz, double* abc, double pp, int type = 1);
+    std::pair<int, double> GetTequat(double* xyz, double* abc, double R); // находим t из квадратного уравнения
+    bool EarthReflType(double pp);
     bool P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz);                      // выбор типа столкновения (поглощение или рассеяние)
     double* P7napravl(float* mass, double** F, int Lnum, double* abc);      // пересчет координат направления пробега
     void Cout_xyz(double* xyz);
@@ -39,8 +40,8 @@ public:
     double GetSumLow();
     void SetSum0();
     void CountK(int* t);
-    int ModPer(float* mass, double** F, int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp);
-    int* NModPer(int* t, float* mass, double** F, int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp);
-    void Modelirovanie(float* mass, double** F, double* waves, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp);
+    int ModPer(float* mass, double** F, int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type);
+    int* NModPer(int* t, float* mass, double** F, int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type);
+    void Modelirovanie(float* mass, double** F, double* waves, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type);
 };
 

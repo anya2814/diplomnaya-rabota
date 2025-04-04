@@ -134,7 +134,7 @@ void Data::getKoefOsl(std::vector<std::map<int, double>> &koef_osl, std::vector<
 
 // вспомогательная функция для P6
 // получение массива углов
-float* Data::getM(float* mass)
+float* Data::getM(float* angles)
 {
     std::ifstream H;
     float read;
@@ -146,7 +146,7 @@ float* Data::getM(float* mass)
         for (int i = 0; i < N; i++)
         {
             H >> read;
-            mass[i] = cos(read * PI / 180.);
+            angles[i] = cos(read * PI / 180.);
             for (int j = 0; j < 5; j++) {
                 H >> read;
             }
@@ -154,7 +154,7 @@ float* Data::getM(float* mass)
         H.close();
     }
 
-    return mass;
+    return angles;
 }
 
 // вспомогательная функция для P6
