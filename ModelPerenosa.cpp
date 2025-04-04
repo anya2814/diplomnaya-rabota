@@ -196,10 +196,7 @@ void ModelPerenosa::GetIzotr(double* abc) {
 int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp, int type) {
     double ht = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371;
     double j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371;
-    if (alb_rass[Lnum].size() != 3)
-        int k = 0;
-    if ((sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371) < -0.01)
-        j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]);
+
     std::map<int, double>::iterator curr_ht_ko; // слой в котором находится частица для коэффициента ослабления  
                                                 // (0 - 0-3 км, 1 - 3-13 км, 2 - 13-25 км, 3 - 25-35 км, 4 - 35-100 км, где ко = 0)
     for (std::map<int, double>::iterator it = koef_osl[Lnum].begin(); it != koef_osl[Lnum].end(); it++) {
@@ -235,16 +232,10 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& koef_o
             xyz[0] = xyz[0] + abc[0] * t.second; // координаты пересечения со сферой
             xyz[1] = xyz[1] + abc[1] * t.second;
             xyz[2] = xyz[2] + abc[2] * t.second;
-            if ((sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371) < -0.01)
-                j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]);
             if (temp <= 0) {
                 Cout_xyz(xyz); return 1;
             }
             if (curr_ht_ko == koef_osl[Lnum].begin()) {     // если летев внутрь частица сталкивается с поверхностью Земли                temp = Reflection(Lnum, xyz, abc, pp, type);
-                if ((sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371) < -0.01)
-                    int j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]);
-                if (alb_rass[Lnum].size() != 3)
-                    int k = 0;
                 if (temp) return -2;
             }
             else curr_ht_ko--; // частица летит вниз
@@ -525,10 +516,9 @@ std::pair<int,double> ModelPerenosa::GetTequat(double* xyz, double* abc, double 
 bool ModelPerenosa::P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz) {
     double a = GetA();
     int curr_ht = xyz[2] - 6371, curr_ht_pos = -1;
-    if (alb_rass[Lnum].size() != 3)
-        int k = 0;
     std::map<int, double>::iterator it = alb_rass[Lnum].begin();
     auto next = it;
+    
     next++;
     for (;it != alb_rass[Lnum].end();) {
         if (curr_ht > next->first) {
@@ -536,11 +526,8 @@ bool ModelPerenosa::P5type(int Lnum, std::vector<std::map<int, double>>& alb_ras
         }
         else break;
     }
-    if (alb_rass[Lnum].size() != 3)
-        int k = 0;
+
     if (a < it->second) {
-        if (alb_rass[Lnum].size() != 3)
-            int k = 0; 
         return 0;
     }// произошло рассеяние
     else return 1; // произошло поглощение
@@ -585,7 +572,7 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
     double* abc = new double[3], * xyz = new double[3];
     for (int i = 0; i < 3; i++)
         abc[i] = 0; 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 2; i++)
         xyz[i] = 0;
     xyz[2] = 6371;
     int f;
@@ -594,8 +581,7 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
 
     for (;;) {
         f = P2length(Lnum, koef_osl, alb_rass, xyz, abc, pp, type);
-        if (alb_rass[Lnum].size() != 3)
-            int k = 0;
+
         if (f == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
@@ -618,8 +604,6 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
         }
 
         if (P5type(Lnum, alb_rass, xyz)) {
-            if (alb_rass[Lnum].size() != 3)
-                int k = 0;
             // Произошло поглощение
             Cout_xyz(xyz);
             delete[]abc;
@@ -628,8 +612,6 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
         }
 
         abc = P7napravl(angles, F, Lnum, abc);
-        if (alb_rass[Lnum].size() != 3)
-            int k = 0;
 
     }
 
@@ -642,10 +624,6 @@ int* ModelPerenosa::NModPer(int* t, float* angles, double** F, int Lnum, std::ve
         t[i] = 0;
     for (int i = 0; i < kol; i++) {
         k = ModPer(angles, F, Lnum, koef_osl, alb_rass, pp, type);
-        if (alb_rass[Lnum].size() != 3)
-            int k = 0;
-        if (i == 100)
-            j = 0;
         t[k]++;
     }
 
