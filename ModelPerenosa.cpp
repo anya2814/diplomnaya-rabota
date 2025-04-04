@@ -235,7 +235,8 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& koef_o
             if (temp <= 0) {
                 Cout_xyz(xyz); return 1;
             }
-            if (curr_ht_ko == koef_osl[Lnum].begin()) {     // если летев внутрь частица сталкивается с поверхностью Земли                temp = Reflection(Lnum, xyz, abc, pp, type);
+            if (curr_ht_ko == koef_osl[Lnum].begin()) {     // если летев внутрь частица сталкивается с поверхностью Земли                
+                temp = Reflection(Lnum, xyz, abc, pp, type);
                 if (temp) return -2;
             }
             else curr_ht_ko--; // частица летит вниз
