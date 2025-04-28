@@ -6,34 +6,35 @@
 #include <map>
 #include <fstream>
 
-// double abc[3] - массив a, b и с
-// double xyz[3] - массив x, y, z
-// double fi[2] - массив cos фи, sin фи
+// double abc[3] - пїЅпїЅпїЅпїЅпїЅпїЅ a, b пїЅ пїЅ
+// double xyz[3] - пїЅпїЅпїЅпїЅпїЅпїЅ x, y, z
+// double fi[2] - пїЅпїЅпїЅпїЅпїЅпїЅ cos пїЅпїЅ, sin пїЅпїЅ
 
-static const int N = 204; // число заданных значений F и m в файле
-const double h = 30; // верхняя граница z
-const int kol = 1000000; // количество моделируемых пробегов частиц
+static const int N = 204; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ F пїЅ m пїЅ пїЅпїЅпїЅпїЅпїЅ
+const double h = 30; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ z
+const int kol = 1000000; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 
 class ModelPerenosa
 {
     static double sumUp;
     static double sumLow;
-    double GetA();                       // получение случайного числа в интервале от 0 до 1 (равномерное распределение)
+    double GetA();                       // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 0 пїЅпїЅ 1 (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
     double getMa(float* mass, double** F, int Lnum, double a = ((rand() % 1001) / 1000.));
-    double* GetFi(double* fi, double m = 1);            // вспомогательная функция для P1 и P7, нахождение косинуса и синуса для выбора начальной точки и пересчета координат направления пробега
-    void CrossUp(double add);            // учет пересечений верхней площадки с весом 1/|(ns, w)|
-    void CrossLow(double add);         // учет пересечений нижней площадки с весом 1/|(ns, w)|
-    void GetIzotr(double* abc);      // выбор направления для изотропного распределения
-    void GetLambert(double* abc);      // выбор направления для ламбертовского распределения
+    double* GetFi(double* fi, double m = 1);            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ P1 пїЅ P7, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    void CrossUp(double* xyz, double* abc);            // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ 1/|(ns, w)|
+    void CrossLow(double* xyz, double* abc);         // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ 1/|(ns, w)|
+    void GetIzotr(double* abc);      // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+    void GetLambert(double* abc);      // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     void findA(double *a, double e1_old[], double e2_old[], double e3_old[], double e_new[]);
-    int P2length(int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp, int type);                   // выбор длины свободного пробега l
+    int P2length(int Lnum, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp, int type);                   // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ l
     bool Reflection(int Lnum, double* xyz, double* abc, double pp, int type = 1);
-    std::pair<int, double> GetTequat(double* xyz, double* abc, double R); // находим t из квадратного уравнения
+    std::pair<int, double> GetTequat(double* xyz, double* abc, double R); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ t пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     bool EarthReflType(double pp);
-    bool P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz);                      // выбор типа столкновения (поглощение или рассеяние)
-    double* P7napravl(float* mass, double** F, int Lnum, double* abc);      // пересчет координат направления пробега
+    bool P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz);                      // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
+    double* P7napravl(float* mass, double** F, int Lnum, double* abc);      // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     void Cout_xyz(double* xyz);
     void OutToFile(double** tBig, double* waves);
+    double GetWeight(double* xyz, double* abc); // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 public:
     double GetSumUp();

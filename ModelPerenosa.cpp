@@ -1,4 +1,4 @@
-﻿#include "ModelPerenosa.h"
+#include "ModelPerenosa.h"
 
 // получение случайного вещественного числа от 0 до 1
 double ModelPerenosa::GetA() {
@@ -49,10 +49,15 @@ double* ModelPerenosa::GetFi(double* fi, double m) {
     return fi;
 }
 
+double ModelPerenosa::GetWeight(double* xyz, double* abc) {
+    double res = (xyz[0] * abc[0] + xyz[1] * abc[1] + xyz[2] * abc[2]) / sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
+    return abs(res);
+}
+
 // учет пересечений верхней площадки с весом 1/|(ns, w)|
-void ModelPerenosa::CrossUp(double add)
+void ModelPerenosa::CrossUp(double* xyz, double* abc)
 {
-    sumUp = sumUp + 1.0 / (kol * abs(add));
+    sumUp = sumUp + 1.0 / (kol * GetWeight(xyz, abc));
 }
 
 double ModelPerenosa::GetSumUp()
@@ -61,9 +66,9 @@ double ModelPerenosa::GetSumUp()
 }
 
 // учет пересечений нижней площадки с весом 1/|(ns, w)|
-void ModelPerenosa::CrossLow(double add)
+void ModelPerenosa::CrossLow(double* xyz, double* abc)
 {
-    sumLow = sumLow + 1.0 / (kol * abs(add));
+    sumLow = sumLow + 1.0 / (kol * GetWeight(xyz, abc));
 }
 
 double ModelPerenosa::GetSumLow()
@@ -114,82 +119,6 @@ void ModelPerenosa::GetIzotr(double* abc) {
 
     delete[]fi;
 }
-
-// ПРЕДЫДУЩАЯ ФУНКЦИЯ выбор длины свободного пробега l
-/*double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, double pp) {
-    int curr_ht = z / 1;        // слой в котором находится частица
-    double a = GetA(), b = GetA(), l;
-    double ln_prev = -log(a), ln_new, l_sum = 0;    //  
-    double c = abc[2];          // косинус угла к поверхности Земли
-
-    while ((a == 0) || (a == 1)) {
-        a = GetA();
-    }
-    ln_prev = -log(a);
-
-    if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
-
-    if (c < 0) {
-        // первый слой
-        l = (z - curr_ht * 1.0) / abs(c);
-        ln_new = ln_prev - l * d[Lnum][curr_ht];
-        l_sum += l;
-
-        if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
-
-        if (curr_ht == 0) {
-            if (b <= pp) {
-                abc = GetLambert(abc);
-                c = abc[2];
-                if (c == 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
-            }
-            else return(-2); // произошло поглощение частицы поверхностью Земли
-        }
-        else {
-            curr_ht--;
-            for (; curr_ht >= 0;) {
-                ln_prev = ln_new;
-                l = 1 / abs(c);
-                ln_new = ln_prev - l * d[Lnum][curr_ht];
-                if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
-
-                l_sum += l;
-                curr_ht--;
-            }
-            if (b <= pp) { 
-                abc = GetLambert(abc);
-                c = abc[2]; 
-                if (c == 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
-            }
-            else return(-2); // произошло поглощение частицы поверхностью Земли
-        }
-    }
-
-    else {
-        // первый слой
-        l = ((curr_ht * 1.0 + 1) - z) / c;
-        if (d[Lnum][curr_ht] < 0.00000001)
-            return -1;
-        ln_new = ln_prev - l * d[Lnum][curr_ht];
-        if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
-        l_sum += l;
-        curr_ht++;
-    }
-
-    for (; curr_ht < 100;) {
-        ln_prev = ln_new;
-        l = 1 / c;
-        if (d[Lnum][curr_ht] < 0.00000001)
-            return -1;
-        ln_new = ln_prev - l * d[Lnum][curr_ht];
-        if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
-
-        l_sum += l;
-        curr_ht++;
-    }
-}*/
-
-
 
 // НОВАЯ ФУНКЦИЯ выбор длины свободного пробега l + проверка вылета из среды 
 // вычисление координат очередной точки столкновения
@@ -273,90 +202,8 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& koef_o
     if (next == koef_osl[Lnum].end()) return -1;
 }
 
-/*bool ModelPerenosa::Reflection(double* xyz, double* abc) {
-    // abc1 - вектор нормали к плоскости от которой отражается частица
-    // abc2 = abc - направление до отражения
-    // abc3 - направление после отражения
 
-    // old basis - старый базис, основаный на abc1, вызывая функцию GetIzotr или GetLambert получаем координаты отраженного вектора abc3 в нем
-
-    // если зеркальное отражение: abc3 = (0, sqrt(1-c3^2), c3)
-    // c3 = cos teta = - a1*a2 - b1*b2 - c1*c2
-
-    // new basis - новый базис
-    // e1_old = (1,0,0)
-    // e2_old = (0,1,0)
-    // e3_old = (0,0,1)
-    return 1;
-
-    double abc2[3]{ abc[0], abc[1], abc[2] }; // задали abc2
-    double abc3[3]{ 0, 0, 0 };
-    double e1_old[3]{ 0, 0, 0 }; double e2_old[3]{ 0, 0, 0 }; double e3_old[3]{ 0, 0, 0 }; 
-    double e1_new[3]{ 1, 0, 0 }; double e2_new[3]{ 0, 1, 0 }; double e3_new[3]{ 0, 0, 1 };  // задали новый базис
-
-    double** a = new double* [3];   // матрица перехода к новому базису
-    for (int i = 0; i < 3; i++)
-        a[i] = new double[3];
-
-    double v_length = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
-    double abc1[3]{ xyz[0] / v_length, xyz[1] / v_length, xyz[2] / v_length }; // задали abc1
-
-    // 1) находим координаты abc3 в старом базисе eсли отражение зеркальное
-    bool zerkalnoe_otrazhenie = true;
-    if (zerkalnoe_otrazhenie) {
-        abc3[2] = -abc1[0] * abc2[0] - abc1[1] * abc2[1] - abc1[2] * abc2[2];
-        abc3[1] = sqrt(1 - abc3[2]);
-    }
-
-    // если изотропное:
-    // GetIzotr(abc);
-    // abc3[0] = abc[0]; abc3[1] = abc[1]; abc3[2] = abc[2]; 
-    // если Ламбертовское:
-    // GetIzotr(abc);
-    // abc3[0] = abc[0]; abc3[1] = abc[1]; abc3[2] = abc[2]; 
-
-    // 2) находим e3_old
-    e3_old[0] = abc1[0]; e3_old[1] = abc1[1]; e3_old[2] = abc1[2]; // задали e3 старого базиса
-
-    // 3) находим e2_old. это пересечение двух плоскостей. первая - точка(0,0,0), abc1, abc2, вторая - перпендикулярна abc1
-    // уравнение первой плоскости будет: A1 * x + B1 * y + C1 * z = 0
-    // x abc1[0] abc2[0]
-    // y abc1[1] abc2[1]
-    // z abc1[2] abc2[2]
-    double A1 = abc1[1] * abc2[2] - abc2[1] * abc1[2];
-    double B1 = -abc1[0] * abc2[2] + abc2[0] * abc1[2];
-    double C1 = abc1[0] * abc2[1] - abc2[0] * abc1[1];
-
-    // уравнение второй плоскости будет: A2 * x + B2 * y + C2 * z = 0
-    double A2 = abc1[0], B2 = abc1[1], C2 = abc1[2];
-
-    // направляющий вектор прямой пересечения двух плоскостей:
-    e2_old[0] = B1 * C2 - C1 * C2; e2_old[1] = C1 * A2 - A1 * C2; e2_old[2] = A1 * B2 - B1 * A2;
-
-    // выбираем знак (чтобы вектор был по направлению abc2, а не -abc2)
-    if ((e2_old[0] * abc2[0] + e2_old[1] * abc2[1] + e2_old[2] * abc2[2]) >= (-e2_old[0] * abc2[0] - e2_old[1] * abc2[1] - e2_old[2] * abc2[2])) {
-        e2_old[0] = -e2_old[0]; e2_old[1] = -e2_old[1]; e2_old[2] = -e2_old[2];
-    }
-
-    // 4) находим e1_old
-    // i         j          k
-    // e2_old[0] e2_old[1] e2_old[2]
-    // e3_old[0] e3_old[1] e3_old[2]
-    e1_old[0] = e2_old[1] * e3_old[2] - e2_old[2] * e3_old[1];
-    e1_old[1] = -e2_old[0] * e3_old[2] + e2_old[2] * e3_old[0];
-    e1_old[2] = e2_old[0] * e3_old[1] - e2_old[1] * e3_old[0];
-
-    findA(a[0], e1_old, e2_old, e3_old, e1_new);
-    findA(a[1], e1_old, e2_old, e3_old, e2_new);
-    findA(a[2], e1_old, e2_old, e3_old, e3_new);
-
-    abc[0] = a[0][0] * e1_old[0] + a[0][1] * e2_old[0] + a[0][2] * e3_old[0];
-    abc[1] = a[1][0] * e1_old[0] + a[1][1] * e2_old[0] + a[1][2] * e3_old[0];
-    abc[2] = a[2][0] * e1_old[0] + a[2][1] * e2_old[0] + a[2][2] * e3_old[0];
-}*/
-
-// новая функция отражения
-
+// функция отражения
 bool ModelPerenosa::Reflection(int Lnum, double* xyz, double* abc, double pp, int type) {
     // abc1 - вектор нормали к плоскости от которой отражается частица
     // abc2 = abc - направление до отражения
@@ -369,7 +216,8 @@ bool ModelPerenosa::Reflection(int Lnum, double* xyz, double* abc, double pp, in
     if (type == 1) {
         double v_length = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
         double abc1[3]{ xyz[0] / v_length, xyz[1] / v_length, xyz[2] / v_length }; // задали abc1
-        double spr = abc1[0] * abc2[0] + abc1[1] * abc2[1] + abc1[2] * abc2[2]; // скалярное произведение двух векторов - произведение их длин на косинус угла между ними, если есть координаты - сумма произведений соответствующих координат
+        double spr = abc1[0] * abc2[0] + abc1[1] * abc2[1] + abc1[2] * abc2[2]; // скалярное произведение двух векторов - произведение их длин на косинус угла между ними, 
+                                                                                // если есть координаты - сумма произведений соответствующих координат
         abc[0] = abc2[0] - 2 * spr * abc1[0];
         abc[1] = abc2[1] - 2 * spr * abc1[1];
         abc[2] = abc2[2] - 2 * spr * abc1[2];
@@ -384,8 +232,10 @@ bool ModelPerenosa::Reflection(int Lnum, double* xyz, double* abc, double pp, in
         // e3_old = (0,0,1)
 
         double abc2[3]{ abc[0], abc[1], abc[2] }; // задали abc2
-        double e1_old[3]{ 0, 0, 0 }; double e2_old[3]{ 0, 0, 0 }; double e3_old[3]{ 0, 0, 0 };
-        double e1_new[3]{ 1, 0, 0 }; double e2_new[3]{ 0, 1, 0 }; double e3_new[3]{ 0, 0, 1 };  // задали новый базис - стандартный
+        double e1_old[3]{ 1, 0, 0 }; double e2_old[3]{ 0, 1, 0 }; double e3_old[3]{ 0, 0, 1 };
+        double e1_new[3]{ 0, 0, 0 }; double e2_new[3]{ 0, 0, 0 }; double e3_new[3]{ 0, 0, 0 };  // задали новый базис - стандартный
+
+        double *old_coord = new double[3];
 
         double** a = new double* [3];   // матрица перехода к новому базису
         for (int i = 0; i < 3; i++)
@@ -395,16 +245,26 @@ bool ModelPerenosa::Reflection(int Lnum, double* xyz, double* abc, double pp, in
         double abc1[3]{ xyz[0] / v_length, xyz[1] / v_length, xyz[2] / v_length }; // задали abc1
 
         // если изотропное:
-        if (type == 2) { GetIzotr(abc); }
+        if (type == 2) {
+            GetIzotr(old_coord); 
+        }
 
         // если Ламбертовское:
-        else { GetLambert(abc); }
+        else { GetLambert(old_coord); }
 
-        // 2) находим e3_old
-        e3_old[0] = abc1[0]; e3_old[1] = abc1[1]; e3_old[2] = abc1[2]; // задали e3 старого базиса
+        // 2) находим e3_new
+        e3_new[0] = abc1[0]; e3_new[1] = abc1[1]; e3_new[2] = abc1[2]; // задали e3 нового базиса
 
-        // 3) находим e2_old. это пересечение двух плоскостей. первая - точка(0,0,0), abc1, abc2, вторая - перпендикулярна abc1
+        // 3) находим e2_new. это пересечение двух плоскостей. первая - точка(0,0,6371), abc1, abc2, вторая - перпендикулярна abc1
         // уравнение первой плоскости будет: A1 * x + B1 * y + C1 * z = 0
+        
+        // проверка abc2 на параллельность вектору abc1
+        while (abs(abc1[0] * abc2[0] + abc1[1] * abc2[1] + abc1[2] * abc2[2]) > 0.99) {
+            GetIzotr(abc2); // генерируем вектор равномерно распределенный в одной полуплоскости
+            // с вероятностью 1/2 умножаем вектор на минус 1 чтобы был равномерно распределен в двух полуплоскостях, то есть в сфере
+            if (GetA() < 0.5) { abc2[0] = -abc2[0]; abc2[1] = -abc2[1]; abc2[2] = -abc2[2]; }
+        }
+        
         // x abc1[0] abc2[0]
         // y abc1[1] abc2[1]
         // z abc1[2] abc2[2]
@@ -416,32 +276,47 @@ bool ModelPerenosa::Reflection(int Lnum, double* xyz, double* abc, double pp, in
         double A2 = abc1[0], B2 = abc1[1], C2 = abc1[2];
 
         // направляющий вектор прямой пересечения двух плоскостей:
-        e2_old[0] = B1 * C2 - C1 * C2; e2_old[1] = C1 * A2 - A1 * C2; e2_old[2] = A1 * B2 - B1 * A2;
+        e2_new[0] = B1 * C2 - C1 * C2; e2_new[1] = C1 * A2 - A1 * C2; e2_new[2] = A1 * B2 - B1 * A2;
 
         // выбираем знак (чтобы вектор был по направлению abc2, а не -abc2)
-        if ((e2_old[0] * abc2[0] + e2_old[1] * abc2[1] + e2_old[2] * abc2[2]) >= (-e2_old[0] * abc2[0] - e2_old[1] * abc2[1] - e2_old[2] * abc2[2])) {
-            e2_old[0] = -e2_old[0]; e2_old[1] = -e2_old[1]; e2_old[2] = -e2_old[2];
+        if ((e2_new[0] * abc2[0] + e2_new[1] * abc2[1] + e2_new[2] * abc2[2]) < (-e2_new[0] * abc2[0] - e2_new[1] * abc2[1] - e2_new[2] * abc2[2])) {
+            e2_new[0] = -e2_new[0]; e2_new[1] = -e2_new[1]; e2_new[2] = -e2_new[2];
+        }
+        
+        abc2[0] = abc[0]; abc2[1] = abc[1]; abc2[2] = abc[2]; // на случай если брали случайный вектор для построения плоскости
+
+        // нормировка
+        v_length = sqrt(e2_new[0] * e2_new[0] + e2_new[1] * e2_new[1] + e2_new[2] * e2_new[2]);
+        for (int i = 0; i < 3; i++)
+        {
+            e2_new[i] = e2_new[i] / v_length;
         }
 
-        // 4) находим e1_old
+        // 4) находим e1_new
         // i         j          k
-        // e2_old[0] e2_old[1] e2_old[2]
-        // e3_old[0] e3_old[1] e3_old[2]
-        e1_old[0] = e2_old[1] * e3_old[2] - e2_old[2] * e3_old[1];
-        e1_old[1] = -e2_old[0] * e3_old[2] + e2_old[2] * e3_old[0];
-        e1_old[2] = e2_old[0] * e3_old[1] - e2_old[1] * e3_old[0];
+        // e2_new[0] e2_new[1] e2_new[2]
+        // e3_new[0] e3_new[1] e3_new[2]
+        e1_new[0] = e2_new[1] * e3_new[2] - e2_new[2] * e3_new[1];
+        e1_new[1] = -e2_new[0] * e3_new[2] + e2_new[2] * e3_new[0];
+        e1_new[2] = e2_new[0] * e3_new[1] - e2_new[1] * e3_new[0];
+
+        // e1_new = a[0][0] * e1_old + a[1][0] * e2_old + a[2][0] * e3_old
+        // e2_new = a[0][1] * e1_old + a[1][1] * e2_old + a[2][1] * e3_old
+        // e3_new = a[0][2] * e1_old + a[1][2] * e2_old + a[2][2] * e3_old
 
         findA(a[0], e1_old, e2_old, e3_old, e1_new);
         findA(a[1], e1_old, e2_old, e3_old, e2_new);
         findA(a[2], e1_old, e2_old, e3_old, e3_new);
 
-        abc[0] = a[0][0] * e1_old[0] + a[0][1] * e2_old[0] + a[0][2] * e3_old[0];
-        abc[1] = a[1][0] * e1_old[0] + a[1][1] * e2_old[0] + a[1][2] * e3_old[0];
-        abc[2] = a[2][0] * e1_old[0] + a[2][1] * e2_old[0] + a[2][2] * e3_old[0];
-        
+        abc[0] = a[0][0] * old_coord[0] + a[1][0] * old_coord[1] + a[2][0] * old_coord[2];
+        abc[1] = a[0][1] * old_coord[0] + a[1][1] * old_coord[1] + a[2][1] * old_coord[2];
+        abc[2] = a[0][2] * old_coord[0] + a[1][2] * old_coord[1] + a[2][2] * old_coord[2];
+        int h = 0;
+
         for (int i = 0; i < 3; i++)
             delete[]a[i];
         delete[]a;
+        delete[]old_coord;
         return 0; // произошло отражение
     }
 }
@@ -488,30 +363,6 @@ std::pair<int,double> ModelPerenosa::GetTequat(double* xyz, double* abc, double 
         else return std::make_pair(0, 0);
     };
 }
-
-// проверка вылета из среды 
-// вычисление координат очередной точки столкновения
-/*double* ModelPerenosa::P3P4calcul(double* xyz, double* abc, double l, double* abc_prev) {
-    if ((abc_prev[2] != abc[2]) & (abs(abc_prev[2]) != 0)) {
-        double l1 = xyz[2] / abs(abc_prev[2]), l2 = l - l1;
-
-        xyz[0] = xyz[0] + abc_prev[0] * l1;
-        xyz[1] = xyz[1] + abc_prev[1] * l1;
-        xyz[2] = xyz[2] + abc_prev[2] * l1;
-
-        xyz[0] = xyz[0] + abc[0] * l2;
-        xyz[1] = xyz[1] + abc[1] * l2;
-        xyz[2] = xyz[2] + abc[2] * l2;
-    }
-
-    else {
-        xyz[0] = xyz[0] + abc[0] * l;
-        xyz[1] = xyz[1] + abc[1] * l;
-        xyz[2] = xyz[2] + abc[2] * l;
-    };
-
-    return xyz;
-}*/
 
 // выбор типа столкновения (поглощение или рассеяние)
 bool ModelPerenosa::P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz) {
@@ -586,8 +437,7 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
         if (f == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
-            Cout_xyz(xyz);
-            CrossUp(abc[2]);
+            CrossUp(xyz, abc);
             delete[]abc;
             delete[]xyz;
             return 1;
@@ -597,8 +447,7 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
         if (f == -2)
         {
             // Произошло поглощение частицы поверхностью Земли
-            Cout_xyz(xyz);
-            CrossLow(abc[2]);
+            CrossLow(xyz, abc);
             delete[]abc;
             delete[]xyz;
             return 0;
@@ -606,7 +455,6 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
 
         if (P5type(Lnum, alb_rass, xyz)) {
             // Произошло поглощение
-            Cout_xyz(xyz);
             delete[]abc;
             delete[]xyz;
             return 2;
