@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <string>
 #include <map>
 #include <fstream>
 
@@ -12,7 +13,7 @@
 
 static const int N = 204; // ����� �������� �������� F � m � �����
 const double h = 30; // ������� ������� z
-const int kol = 1000000; // ���������� ������������ �������� ������
+const int kol = 100000; // ���������� ������������ �������� ������
 
 class ModelPerenosa
 {
@@ -33,7 +34,7 @@ class ModelPerenosa
     bool P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz);                      // ����� ���� ������������ (���������� ��� ���������)
     double* P7napravl(float* mass, double** F, int Lnum, double* abc);      // �������� ��������� ����������� �������
     void Cout_xyz(double* xyz);
-    void OutToFile(double** tBig, double* waves);
+    void OutToFile(double** tBig, double* waves, double pp);
     double GetWeight(double* xyz, double* abc); // ����� ��� ��� �����������
 
 public:

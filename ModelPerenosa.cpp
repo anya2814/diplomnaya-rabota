@@ -487,19 +487,18 @@ void ModelPerenosa::CountK(int* t)
 }
 
 // вывод результатов в файл
-void ModelPerenosa::OutToFile(double** tBig, double* waves)
+void ModelPerenosa::OutToFile(double** tBig, double* waves, double pp)
 {
-    std::ofstream out;        
-    out.open("Results.txt");      // открываем файл для записи
-    if (out.is_open())
-    {
-        out << "Waves\tKtAbsorption\tKtUpCross\tUpCross\tKtLowCross\tLowCross" << std::endl;
-        for (int i = 0; i < 5; i++) {
-            out << waves[i] << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2];
+    for (int i = 0; i < 5; i++) {
+        std::ofstream out;        
+        out.open("Results_wave_" + std::to_string(waves[i]).substr(0, 5) + ".txt", std::ios::app);      // открываем файл для записи
+        if (out.is_open())
+        {
+            out << pp << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2];
             out << '\t' << tBig[i][3] / (kol * 1.0) << '\t' << tBig[i][4] << std::endl;
-        }
+        };
+        out.close();
     }
-    out.close();
 }
 
 void ModelPerenosa::Modelirovanie(float* angles, double** F, double* waves, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type)
@@ -513,9 +512,9 @@ void ModelPerenosa::Modelirovanie(float* angles, double** F, double* waves, std:
         SetSum0();
         std::cout << "Данные для длины волны l=" << waves[i] << " мкм: " << std::endl << std::endl;
         t = NModPer(t, angles, F, i, koef_osl, alb_rass, pp, type);
-        std::cout << "Произошло " << t[0] << " поглощений частиц поверхностью Земли. " << std::endl;
+        /*std::cout << "Произошло " << t[0] << " поглощений частиц поверхностью Земли. " << std::endl;
         std::cout << "Произошло " << t[1] << " вылетов за пределы среды через верхнюю границу. " << std::endl;
-        std::cout << "Произошло " << t[2] << " поглощений. " << std::endl;
+        std::cout << "Произошло " << t[2] << " поглощений. " << std::endl;*/
 
         std::cout << std::endl;
         CountK(t);
@@ -531,7 +530,7 @@ void ModelPerenosa::Modelirovanie(float* angles, double** F, double* waves, std:
         tBig[i][4] = GetSumLow();
     }
 
-    OutToFile(tBig, waves);
+    OutToFile(tBig, waves, pp);
 
     delete[]t;
     for (int i = 0; i < 5; i++)

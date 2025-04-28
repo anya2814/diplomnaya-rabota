@@ -47,7 +47,10 @@ int main()
     std::cin >> type;
 
     // моделирование процессов переноса
-    objModel.Modelirovanie(angles, F, waves, koef_osl, alb_rass, pp, type);
+    for (pp = 1; pp <= 1;) {
+        objModel.Modelirovanie(angles, F, waves, koef_osl, alb_rass, pp, type);
+        pp = pp + 0.05;
+    }
 
     // освобождение памяти
     delete[]angles;
