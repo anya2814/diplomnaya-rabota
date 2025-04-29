@@ -164,7 +164,7 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
                 curr_ht--;
             }
             if (b <= pp) { 
-                abc[2] = -abc[2];
+                abc = GetLambert(abc);
                 c = abc[2]; 
                 b = GetA();
                 if (c == 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
@@ -332,19 +332,18 @@ void ModelPerenosa::CountK(int* t)
 }
 
 // вывод результатов в файл
-void ModelPerenosa::OutToFile(double** tBig, double* waves)
+void ModelPerenosa::OutToFile(double** tBig, double* waves, double pp)
 {
-    std::ofstream out;        
-    out.open("Results.txt");      // открываем файл для записи
-    if (out.is_open())
-    {
-        out << "Waves\tKtAbsorption\tKtUpCross\tUpCross\tKtLowCross\tLowCross" << std::endl;
-        for (int i = 0; i < 5; i++) {
-            out << waves[i] << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2];
+    for (int i = 0; i < 5; i++) {
+        std::ofstream out;
+        out.open("Results_wave_" + std::to_string(waves[i]).substr(0, 5) + ".txt", std::ios::app);      // открываем файл для записи
+        if (out.is_open())
+        {
+            out << pp << '\t' << tBig[i][0] / (kol * 1.0) << '\t' << tBig[i][1] / (kol * 1.0) << '\t' << tBig[i][2];
             out << '\t' << tBig[i][3] / (kol * 1.0) << '\t' << tBig[i][4] << std::endl;
-        }
+        };
+        out.close();
     }
-    out.close();
 }
 
 void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double** d, double pp)
@@ -376,7 +375,7 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
         tBig[i][4] = GetSumLow();
     }
 
-    OutToFile(tBig, waves);
+    OutToFile(tBig, waves, pp);
 
     delete[]t;
     for (int i = 0; i < 5; i++)

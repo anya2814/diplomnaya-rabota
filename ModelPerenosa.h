@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <string>
 #include <fstream>
 
 // double abc[3] - массив a, b и с
@@ -10,7 +11,7 @@
 
 static const int N = 204; // число заданных значений F и m в файле
 const double h = 30; // верхняя граница z
-const int kol = 100000; // количество моделируемых пробегов частиц
+const int kol = 1000000; // количество моделируемых пробегов частиц
 
 class ModelPerenosa
 {
@@ -28,7 +29,7 @@ class ModelPerenosa
     bool P5type(int Lnum, double** d, double* xyz);                      // выбор типа столкновения (поглощение или рассеяние)
     double* P7napravl(float* mass, double** F, int Lnum, double* abc);      // пересчет координат направления пробега
     void Cout_xyz(double* xyz);
-    void OutToFile(double** tBig, double* waves);
+    void OutToFile(double** tBig, double* waves, double pp);
 
 public:
     double GetSumUp();
