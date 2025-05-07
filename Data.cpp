@@ -16,55 +16,60 @@ double* Data::getWaves(double* wavesLength)
     return wavesLength;
 }
 
-/*double** Data::getd(double** d, double* waves)
+void Data::GetMoleculScatterCoef(std::vector<std::map<int, double>>& mol_koef_scat, double* waves)
 {
-    int* imass = new int[5];
-    int pos = 0;
-    double read, h_prev = 0, h_next;
-    std::ifstream H;
-    H.open("AERO_MOD.txt");
-    if (!H.is_open()) return nullptr;
-    for (int i = 0; i < 27; i++) {
-        H >> read;
-        if (read == waves[pos]) {
-            imass[pos] = i;
-            pos++;
+    std::map<int, double> temp_map;
+    std::ifstream R;
+    std::string a;
+    double H, Hprev, T, P, sr, sp_ip1[5], sp_i[5], value;
+    R.open("Molekulyarnie parametri.txt");
+    if (R.is_open()) {
+        for (int i = 0; i < 3; i++) {
+            R >> a;
         }
-    }
-    for (int j = 0; j < 30; j++) {
-        H >> h_next;
-        pos = 0;
-        for (int i = 0; i < 27; i++) {
-            H >> read;
-            if (i == imass[pos]) {
-                for (int k = h_prev; k < h_next; k++) {
-                    d[pos][k] = read;
-                }
-                pos++;
-            }
-        }
-        h_prev = h_next;
-    }
-    h_prev = 0;
-    for (int j = 0; j < 30; j++) {
-        H >> h_next;
-        pos = 0;
-        for (int i = 0; i < 27; i++) {
-            H >> read;
-            if (i == imass[pos]) {
-                for (int k = h_prev; k < h_next; k++) {
-                    d[pos][100+k] = read;
-                }
-                pos++;
-            }
-        }
-        h_prev = h_next;
-    }
 
-    H.close();
+        // получаем первое значение для усреднения
+        R >> H; R >> T; R >> P;
+        for (int i = 0; i < 5; i++) {
+            sr = 1 / (waves[i] * waves[i] * (938.076 * waves[i] * waves[i] - 10.8426));
+            sp_ip1[i] = sr * P / 1013 * 273.16 / T;
+        }
 
-    return d;
-}*/
+        Hprev = H;
+        // получаем второе значение для усреднения, отдельно чтобы вставить векторы
+        R >> H; R >> T; R >> P;
+        for (int i = 0; i < 5; i++) {
+            sr = 1 / (waves[i] * waves[i] * (938.076 * waves[i] * waves[i] - 10.8426));
+            sp_i[i] = sp_ip1[i];
+            sp_ip1[i] = sr * P / 1013 * 273.16 / T;
+            value = 0.5 * (sp_i[i] + sp_ip1[i]);
+            temp_map.insert(std::pair<int, double>(Hprev, value));
+            mol_koef_scat.push_back(temp_map);
+            temp_map.clear();
+        }
+
+        Hprev = H;
+        for (int i = 3; i < 24; i++) {
+            R >> H; R >> T; R >> P;
+            for (int j = 0; j < 5; j++) {
+                sr = 1 / (waves[j] * waves[j] * (938.076 * waves[j] * waves[j] - 10.8426));
+                sp_i[j] = sp_ip1[j];
+                sp_ip1[j] = sr * P / 1013 * 273.16 / T;
+                value = 0.5 * (sp_i[j] + sp_ip1[j]);
+                mol_koef_scat[j].insert(std::pair<int, double>(Hprev, value));
+            }
+            Hprev = H;
+        }
+
+        // последний слой где не делаем усреднение
+        for (int j = 0; j < 5; j++) {
+            sr = 1 / (waves[j] * waves[j] * (938.076 * waves[j] * waves[j] - 10.8426));
+            sp_ip1[j] = sr * P / 1013 * 273.16 / T;
+            mol_koef_scat[j].insert(std::pair<int, double>(Hprev, sp_ip1[j]));
+        }
+        R.close();
+    }
+}
 
 void Data::getKoefOsl(std::vector<std::map<int, double>> &koef_osl, std::vector<std::map<int, double>> &alb_rass, double* waves)
 {
@@ -155,45 +160,4 @@ float* Data::getM(float* angles)
     }
 
     return angles;
-}
-
-// вспомогательная функция для P6
-// вычисление F по формуле трапеций
-double** Data::getF(double** F, float* mass)
-{
-    double** ind = new double* [N];
-    for (int i = 0; i < N; i++)
-        ind[i] = new double[5];
-    double sum[5];
-    for (int i = 0; i < 5; i++)
-        sum[i] = 0;
-    std::ifstream H;
-    float read;
-    H.open("Indikatrisa.txt");
-    if (H.is_open()) {
-        for (int i = 0; i < 5; i++) {
-            H >> read;
-        }
-        bool flag = false;
-        for (int i = 0; i < N; i++)
-        {
-            H >> read;
-            for (int j = 0; j < 5; j++) {
-                H >> ind[i][j];
-                if (flag)
-                    sum[j] = sum[j] + (ind[i][j] + ind[i - 1][j]) / 2.0 * abs(mass[i] - mass[i - 1]);
-                F[i][j] = sum[j];
-            }
-            flag = true;
-        }
-        H.close();
-        for (int i = 0; i < N; i++)
-            for (int j = 0; j < 5; j++)
-                F[i][j] = F[i][j] / F[N - 1][j];
-    }
-    for (int i = 0; i < N; i++)
-        delete[]ind[i];
-    delete[]ind;
-
-    return F;
 }

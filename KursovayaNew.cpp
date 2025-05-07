@@ -20,18 +20,15 @@ int main()
     double* waves = new double[5];                // длины волн
     std::vector<std::map<int, double>> koef_osl; // коэффициент ослабления потока
     std::vector<std::map<int, double>> alb_rass; // альбедо однократного рассеяния
+    std::vector<std::map<int, double>> mol_koef_rass; // альбедо однократного рассеяния
     
     // N - число заданных значений F и m в файле
     float* angles = new float[N];
 
-    double** F = new double* [N];       // массив значений эмпирической функции распределения направлений рассеяния
-    for (int i = 0; i < N; i++)
-        F[i] = new double[5];
-
     // заполняем массивы
     waves = objData.getWaves(waves);    // длины волн
     angles = objData.getM(angles);      // массив углов
-    F = objData.getF(F, angles);      // функция распределения угла рассеяния
+    objData.GetMoleculScatterCoef(mol_koef_rass, waves);
     objData.getKoefOsl(koef_osl, alb_rass, waves);
 
     // задаем альбедо подстилающей поверхности
@@ -48,16 +45,13 @@ int main()
 
     // моделирование процессов переноса
     for (pp = 1; pp <= 1;) {
-        objModel.Modelirovanie(angles, F, waves, koef_osl, alb_rass, pp, type);
+        objModel.Modelirovanie(angles, waves, mol_koef_rass, koef_osl, alb_rass, pp, type);
         pp = pp + 0.05;
     }
 
     // освобождение памяти
     delete[]angles;
     delete[]waves;
-    for (int i = 0; i < N; i++)
-        delete[]F[i];
-    delete[]F;
 
     return 0;
 }
