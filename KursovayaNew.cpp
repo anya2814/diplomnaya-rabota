@@ -2,6 +2,8 @@
 //
 
 #include <iostream>
+#include <windows.h>
+#include <locale.h>
 #include <time.h>
 #include <map>
 #include "ModelPerenosa.h"
@@ -10,7 +12,9 @@
 int main()
 {
     srand(time(NULL));
-    setlocale(LC_ALL, "rus");
+    setlocale(LC_ALL, "Russian");
+    SetConsoleOutputCP(1251);
+    SetConsoleCP(1251);
 
     // переменные класса для вызова функций
     Data objData;
@@ -33,14 +37,14 @@ int main()
 
     // задаем альбедо подстилающей поверхности
     double pp = 0;
-    std::cout << "Введите значение альбедо подстилающей поверхности:" << std::endl;
+    std::cout << "Vvedite znacheniye albedo podstilayushey poverhnosti:" << std::endl;
     std::cin >> pp;
     // задаем альбедо подстилающей поверхности
     // s - specular (зеркальное)
     // i - isotropic (изотропное)
     // l - lambertian (ламбертовское)
     int type = 0;
-    std::cout << "Выберите тип отражения:" << std::endl << "1 - зеркальное" << std::endl << "2 - изотропное" << std::endl << "3 - ламбертовское" << std::endl;
+    std::cout << "Vyberite tip otrazheniya:" << std::endl << "1 - zerkalnoe" << std::endl << "2 - izotropnoe" << std::endl << "3 - lambertovskoe" << std::endl;
     std::cin >> type;
 
     // моделирование процессов переноса

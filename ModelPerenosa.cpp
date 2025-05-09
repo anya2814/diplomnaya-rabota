@@ -12,15 +12,21 @@ double ModelPerenosa::sumLow = 0;
 
 // вспомогательная функция для P6
 // выбор значения косинуса угла рассеяния m
-double ModelPerenosa::getMa(float* angles, double** F, int Lnum, double a)
+double ModelPerenosa::getMa(double height, float* angles, double** F, double a)
 {
-    int leftI, rightI;
+    int leftI, rightI, col = 0;
     double cosm;
+
+    for (int i = 1; i < 23; i++)
+        if (height > F[0][i]) {
+            col++;
+        }
+
     if (a == 0) cosm = angles[0];
-    else for (int i = 1; i < N; i++)
-        if (a <= F[i][Lnum]) {
-            rightI = i - 1; leftI = i; i = N;
-            cosm = angles[rightI] - (angles[rightI] * 1.0 - angles[leftI] * 1.0) * (a - F[rightI][Lnum]) / (F[leftI][Lnum] - F[rightI][Lnum]);
+    else for (int i = 2; i < N+1; i++)
+        if (a <= F[i][col]) {
+            rightI = i - 1; leftI = i; i = N+1;
+            cosm = angles[rightI] - (angles[rightI] * 1.0 - angles[leftI] * 1.0) * (a - F[rightI][col]) / (F[leftI][col] - F[rightI][col]);
         }
     return cosm;
 }
@@ -122,14 +128,19 @@ void ModelPerenosa::GetIzotr(double* abc) {
 
 // НОВАЯ ФУНКЦИЯ выбор длины свободного пробега l + проверка вылета из среды 
 // вычисление координат очередной точки столкновения
-int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz, double* abc, double pp, int type) {
+int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, double* xyz, double* abc, double pp, int type) {
     double ht = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371;
     double j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371;
 
     std::map<int, double>::iterator curr_ht_ko; // слой в котором находится частица для коэффициента ослабления  
                                                 // (0 - 0-3 км, 1 - 3-13 км, 2 - 13-25 км, 3 - 25-35 км, 4 - 35-100 км, где ко = 0)
-    for (std::map<int, double>::iterator it = koef_osl[Lnum].begin(); it != koef_osl[Lnum].end(); it++) {
+    for (auto it = koef_osl[Lnum].begin(); it != koef_osl[Lnum].end(); it++) {
         if (ht >= it->first) curr_ht_ko = it; // указатель на std::pair где находится текущий коэффициент ослабления    
+    }
+
+    std::map<int, double>::iterator curr_ht_mol; // слой в котором находится частица для коэффициента молекулярного рассеяния
+    for (auto it = mol_koef_rass[Lnum].begin(); it != mol_koef_rass[Lnum].end(); it++) {
+        if (ht >= it->first) curr_ht_mol = it; // указатель на std::pair где находится текущий коэффициент молекулярного рассеяния
     }
 
     double a = 0, R, l_opt;//, l_real = 0;    
@@ -146,15 +157,13 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_ko
     t.second = 0;
     // цикл пока частица летит внутрь
     while (t.first == 2 || t.first == -1) {
-        R = curr_ht_ko->first + 6371.0; // радиус сферы
+        R = curr_ht_mol->first + 6371.0; // радиус сферы
         t = GetTequat(xyz, abc, R);
-        if (alb_rass[Lnum].size() != 3)
-            int k = 0;
         if (t.first == 2 && t.second != -1) {
-            temp = l_opt - t.second * curr_ht_ko->second; // от общей оптической длины отнимаем сколько частица пролетает до слоя
+            temp = l_opt - t.second * (curr_ht_mol->second + curr_ht_ko->second); // от общей оптической длины отнимаем сколько частица пролетает до слоя
             if (temp <= 0)
-                t.second = l_opt / curr_ht_ko->second;
-            else l_opt = l_opt - t.second * curr_ht_ko->second;
+                t.second = l_opt / (curr_ht_mol->second + curr_ht_ko->second);
+            else l_opt = l_opt - t.second * (curr_ht_mol->second + curr_ht_ko->second);
             //l_real = l_real + t;    // реальная длина пробега
             if ((sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371) < -0.01)
                 j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]);
@@ -164,29 +173,37 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_ko
             if (temp <= 0) {
                 Cout_xyz(xyz); return 1;
             }
-            if (curr_ht_ko == koef_osl[Lnum].begin()) {     // если летев внутрь частица сталкивается с поверхностью Земли                
+            if (curr_ht_mol == mol_koef_rass[Lnum].begin()) {     // если летев внутрь частица сталкивается с поверхностью Земли                
                 temp = Reflection(Lnum, xyz, abc, pp, type);
                 if (temp) return -2;
             }
-            else curr_ht_ko--; // частица летит вниз
+            else {
+                curr_ht_mol--; // частица летит вниз
+                if (curr_ht_mol->first < curr_ht_ko->first)
+                    curr_ht_ko--;
+            }
         }
     }
 
     t.second = 0;
-    if (curr_ht_ko == koef_osl[Lnum].end()) return -1;
+    if (curr_ht_mol == mol_koef_rass[Lnum].end()) return -1;
 
-    auto next = curr_ht_ko;
-    next++;
+    auto next = curr_ht_mol; next++;
+    auto next_ko = curr_ht_ko; next_ko++;
 
-    for (; next != koef_osl[Lnum].end(); ++curr_ht_ko) {
+    for (; next != mol_koef_rass[Lnum].end(); ++curr_ht_mol) {
+        if (next_ko->first == curr_ht_mol->first) {
+            curr_ht_ko++;
+            next_ko++;
+        }
         R = next->first + 6371.0; // радиус сферы
         t = GetTequat(xyz, abc, R);
         if (t.first == 0) {
             return 0;
         }
-        temp = l_opt - t.second * curr_ht_ko->second;
-        if (temp <= 0) t.second = l_opt / curr_ht_ko->second;
-        else l_opt = l_opt - t.second * curr_ht_ko->second;
+        temp = l_opt - t.second * (curr_ht_mol->second + curr_ht_ko->second);
+        if (temp <= 0) t.second = l_opt / (curr_ht_mol->second + curr_ht_ko->second);
+        else l_opt = l_opt - t.second * (curr_ht_mol->second + curr_ht_ko->second);
         xyz[0] = xyz[0] + abc[0] * t.second; // координаты пересечения со сферой
         xyz[1] = xyz[1] + abc[1] * t.second;
         xyz[2] = xyz[2] + abc[2] * t.second;
@@ -199,7 +216,7 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_ko
     }
 
     // если частица когда-либо оказалась в слое с нулевым коэффициентом, она вылетает за пределы атмосферы
-    if (next == koef_osl[Lnum].end()) return -1;
+    if (next == mol_koef_rass[Lnum].end()) return -1;
 }
 
 
@@ -365,21 +382,40 @@ std::pair<int,double> ModelPerenosa::GetTequat(double* xyz, double* abc, double 
 }
 
 // выбор типа столкновения (поглощение или рассеяние)
-bool ModelPerenosa::P5type(int Lnum, std::vector<std::map<int, double>>& alb_rass, double* xyz) {
+bool ModelPerenosa::P5type(int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz) {
     double a = GetA();
     int curr_ht = xyz[2] - 6371, curr_ht_pos = -1;
-    std::map<int, double>::iterator it = alb_rass[Lnum].begin();
-    auto next = it;
-    
-    next++;
-    for (;it != alb_rass[Lnum].end();) {
-        if (curr_ht > next->first) {
-            it++; next++;
+
+    std::map<int, double>::iterator pr = alb_rass[Lnum].begin();
+    auto next_pr = pr; next_pr++;
+    for (;pr != alb_rass[Lnum].end();) {
+        if (curr_ht > next_pr->first) {
+            pr++; next_pr++;
         }
         else break;
     }
 
-    if (a < it->second) {
+    std::map<int, double>::iterator aer = koef_osl[Lnum].begin();
+    auto next_aer = aer; next_aer++;
+    for (; aer != koef_osl[Lnum].end();) {
+        if (curr_ht > next_aer->first) {
+            aer++; next_aer++;
+        }
+        else break;
+    }
+
+    std::map<int, double>::iterator mol = alb_rass[Lnum].begin();
+    auto next_mol = mol; next_mol++;
+    for (; mol != alb_rass[Lnum].end();) {
+        if (curr_ht > next_mol->first) {
+            mol++; next_mol++;
+        }
+        else break;
+    }
+
+    double probability = (pr->second * aer->second + mol->second) / (aer->second + mol->second);
+
+    if (a < probability) {
         return 0;
     }// произошло рассеяние
     else return 1; // произошло поглощение
@@ -392,13 +428,13 @@ bool ModelPerenosa::EarthReflType(double pp) { // альбедо подстил�
 }
 
 // пересчет координат направления пробега
-double* ModelPerenosa::P7napravl(float* angles, double** F, int Lnum, double* abc) {
+double* ModelPerenosa::P7napravl(float* angles, double** F, int Lnum, double* abc, double height) {
     double* fi = new double[2], abct[3]; 
     double c = 1, m = 1;
     for (int i = 0; i < 3; i++)
         abct[i] = abc[i];
     while ((!((abc[2]>=-1)&((abc[2] <= 1)))) || (abs(c) == 1) || (abs(m)==1)) {
-        m = getMa(angles, F, Lnum);
+        m = getMa(height, angles, F);
         fi = GetFi(fi);
 
         abc[0] = abct[0] * m - (abct[1] * fi[1] + abct[0] * abct[2] * fi[0]) * sqrt((1 - m * m) / (1 - abct[2] * abct[2]));
@@ -432,7 +468,7 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
     GetIzotr(abc);
 
     for (;;) {
-        f = P2length(Lnum, mol_koef_rass, koef_osl, alb_rass, xyz, abc, pp, type);
+        f = P2length(Lnum, mol_koef_rass, koef_osl, xyz, abc, pp, type);
 
         if (f == -1)
         {
@@ -453,14 +489,14 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
             return 0;
         }
 
-        if (P5type(Lnum, alb_rass, xyz)) {
+        if (P5type(Lnum, mol_koef_rass, koef_osl, alb_rass, xyz)) {
             // Произошло поглощение
             delete[]abc;
             delete[]xyz;
             return 2;
         }
 
-        abc = P7napravl(angles, F, Lnum, abc);
+        abc = P7napravl(angles, F, Lnum, abc, sqrt(xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2] * xyz[2]) - 6371);
 
     }
 
@@ -549,16 +585,17 @@ void ModelPerenosa::Modelirovanie(float* angles, double* waves, std::vector<std:
 // вычисление F по формуле трапеций
 double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, double>& mol_koef_rass, std::map<int, double>& koef_osl, std::map<int, double>& alb_rass)
 {
-    double* ind = new double [N];
-    double sum = 0;
+    double** ind = new double* [N];
+    for (int i = 0; i < N; i++)
+        ind[i] = new double[23];
+    double sum[23], mol_ind, x1, x2; // x1, x2 - границы интегрирования молекулярной индикатрисы
     double one = 1;
+    double mol_ind_dividers[23], aer_ind_divider;
 
-    int i = 0, col;
-    if (F[0][0] == -1) {
-        for (std::map<int, double>::iterator it = mol_koef_rass.begin(); it != mol_koef_rass.end(); it++) {
-            F[0][i] = it->first;
-            i++;
-        }
+    int i = 0, col, special1 = 1, special2 = 0;
+    for (std::map<int, double>::iterator it = mol_koef_rass.begin(); it != mol_koef_rass.end(); it++) {
+        F[0][i] = it->first;
+        i++;
     }
 
     std::ifstream H;
@@ -571,51 +608,80 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
     std::map<int, double>::iterator it_aer_scat = alb_rass.begin();
     std::map<int, double>::iterator next_aer_scat = it_aer_scat; next_aer_scat++;
 
-    H.open("Indikatrisa.txt");
-    if (H.is_open()) {
-        for (int i = 0; i < 5; i++) {
-            H >> read;
-        }
-        bool flag = false;
+    for (int o = 0; o < 3; o++)
+    {
+        if (o == 1) { special1 = 0; special2 = 1; }
+        if (o == 2) { special1 = 1; special2 = 1; }
+        H.open("Indikatrisa.txt");
+        if (H.is_open()) {
+            for (int i = 0; i < 5; i++) {
+                H >> read;
+            }
 
-        for (int i = 0; i < N; i++)
-        {
-            H >> read;
-
-            col = 0;
-            for (int j = 0; j < 5; j++) {
+            for (int i = 0; i < N; i++)
+            {
                 H >> read;
 
-                if (j == Lnum) {
-                    ind[i] = read / (2 * PI);
-                    for (; next_mol != mol_koef_rass.end();) {
-                        ind[i] = ind[i] * (it_aer->second) * (it_aer_scat->second) + 
-                            3 / 8 * (1 + one * mass[i] * mass[i]) * (it_mol->second) / ((it_aer->second) * (it_aer_scat->second) + (it_mol->second));
-                        if (flag)
-                            sum = sum + (ind[i] + ind[i - 1]) / 2.0 * abs(mass[i] - mass[i - 1]);
-                        F[i+1][col] = sum;
-                        col++;
-                        if (next_aer->first == next_mol->first) {
-                            it_aer++;
-                            next_aer++;
+                col = 0;
+                for (int j = 0; j < 5; j++) {
+                    H >> read;
+                    for(int r=0; r<23; r++)
+                        ind[i][r] = read / PI; // (PI+0.3615);
+                    if (o == 2) ind[i][col] = ind[i][col] / aer_ind_divider;
+                    if (j == Lnum) {
+                        if (i == N - 1) {
+                            x1 = 0.5 * (mass[i] + mass[i - 1]);
+                            x2 = mass[i];
                         }
-                        if (next_aer_scat->first == next_mol->first) {
-                            it_aer_scat++;
-                            next_aer_scat++;
+                        else if (i == 0) {
+                            x1 = 0;
+                            x2 = mass[i];
                         }
-                        it_mol++;
-                        next_mol++;
+                        else {
+                            x1 = 0.5 * (mass[i] + mass[i - 1]);
+                            x2 = 0.5 * (mass[i + 1] + mass[i]);
+                        }
+                        mol_ind = abs(pow(x2, 3) + 3 * x2 - pow(x1, 3) - 3 * x1) / 4;
+                        if (o == 2) mol_ind = mol_ind / mol_ind_dividers[col];
+
+                        for (; next_mol != mol_koef_rass.end();) {
+                            ind[i][col] = (special1 * ind[i][col] * (it_aer->second) * (it_aer_scat->second) + special2 * mol_ind * (it_mol->second))
+                                / (special1 * (it_aer->second) * (it_aer_scat->second) + special2 * (it_mol->second));
+                            if (i!=0)
+                                sum[col] = sum[col] + (ind[i][col] + ind[i - 1][col]) / 2.0 * abs(mass[i] - mass[i - 1]);
+                            else sum[col] = 0;
+                            F[i + 1][col] = sum[col];
+                            col++;
+                            if (next_aer->first == next_mol->first) {
+                                it_aer++;
+                                next_aer++;
+                            }
+                            if (next_aer_scat->first == next_mol->first) {
+                                it_aer_scat++;
+                                next_aer_scat++;
+                            }
+                            it_mol++;
+                            next_mol++;
+                        }
+                        it_mol = mol_koef_rass.begin(); next_mol = it_mol; next_mol++;
+                        it_aer = koef_osl.begin(); next_aer = it_aer; next_aer++;
+                        it_aer_scat = alb_rass.begin(); next_aer_scat = it_aer_scat; next_aer_scat++;
                     }
-                    it_mol = mol_koef_rass.begin(); next_mol = it_mol; next_mol++;
-                    it_aer = koef_osl.begin(); next_aer = it_aer; next_aer++;
-                    it_aer_scat = alb_rass.begin(); next_aer_scat = it_aer_scat; next_aer_scat++;
                 }
             }
-            flag = true;
+            H.close();
         }
-        H.close();
+
+        if (o == 0) aer_ind_divider = F[N][0];
+        if (o == 1) for (int i = 1; i < 23; i++) mol_ind_dividers[i] = F[N][i];
     }
 
+    for (int i = 1; i < N+1; i++)
+        for (int j = 0; j < col; j++)
+            F[i][j] = F[i][j] / F[N][j];
+
+    for (int i = 1; i < 23; i++)
+        delete[]ind[i];
     delete[]ind;
 
     return F;

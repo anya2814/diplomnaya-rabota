@@ -7,7 +7,7 @@
 #include <map>
 #include "ModelPerenosa.h"
 
-#define PI 3.14159265
+#define PI 3.14159265359
 
 class Data
 {
