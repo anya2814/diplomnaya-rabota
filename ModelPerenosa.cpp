@@ -592,7 +592,9 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
     double one = 1;
     double mol_ind_dividers[23], aer_ind_divider;
 
-    int i = 0, col, special1 = 1, special2 = 0;
+    int i = 0, col;
+    double special1 = 1, special2 = 0;
+
     for (std::map<int, double>::iterator it = mol_koef_rass.begin(); it != mol_koef_rass.end(); it++) {
         F[0][i] = it->first;
         i++;
@@ -625,10 +627,10 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
                 col = 0;
                 for (int j = 0; j < 5; j++) {
                     H >> read;
-                    for(int r=0; r<23; r++)
-                        ind[i][r] = read / PI; // (PI+0.3615);
-                    if (o == 2) ind[i][col] = ind[i][col] / aer_ind_divider;
                     if (j == Lnum) {
+                        for (int r = 0; r < 23; r++) {
+                            ind[i][r] = read * 2 * PI; // (PI+0.3615);
+                        }
                         if (i == N - 1) {
                             x1 = 0.5 * (mass[i] + mass[i - 1]);
                             x2 = mass[i];
@@ -645,6 +647,7 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
                         if (o == 2) mol_ind = mol_ind / mol_ind_dividers[col];
 
                         for (; next_mol != mol_koef_rass.end();) {
+                            if (o == 2) ind[i][col] = ind[i][col] / aer_ind_divider;
                             ind[i][col] = (special1 * ind[i][col] * (it_aer->second) * (it_aer_scat->second) + special2 * mol_ind * (it_mol->second))
                                 / (special1 * (it_aer->second) * (it_aer_scat->second) + special2 * (it_mol->second));
                             if (i!=0)
