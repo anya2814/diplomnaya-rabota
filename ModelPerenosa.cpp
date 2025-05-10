@@ -590,7 +590,7 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
         ind[i] = new double[23];
     double sum[23], mol_ind, x1, x2; // x1, x2 - границы интегрирования молекулярной индикатрисы
     double one = 1;
-    double mol_ind_dividers[23], aer_ind_divider;
+    double mol_ind_divider, aer_ind_divider;
 
     int i = 0, col;
     double special1 = 1, special2 = 0;
@@ -628,9 +628,6 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
                 for (int j = 0; j < 5; j++) {
                     H >> read;
                     if (j == Lnum) {
-                        for (int r = 0; r < 23; r++) {
-                            ind[i][r] = read * 2 * PI; // (PI+0.3615);
-                        }
                         if (i == N - 1) {
                             x1 = 0.5 * (mass[i] + mass[i - 1]);
                             x2 = mass[i];
@@ -644,9 +641,10 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
                             x2 = 0.5 * (mass[i + 1] + mass[i]);
                         }
                         mol_ind = abs(pow(x2, 3) + 3 * x2 - pow(x1, 3) - 3 * x1) / 4;
-                        if (o == 2) mol_ind = mol_ind / mol_ind_dividers[col];
+                        if (o == 2) mol_ind = mol_ind / mol_ind_divider;
 
-                        for (; next_mol != mol_koef_rass.end();) {
+                        for (; it_mol != mol_koef_rass.end();) {
+                            ind[i][col] = read * 2 * PI;
                             if (o == 2) ind[i][col] = ind[i][col] / aer_ind_divider;
                             ind[i][col] = (special1 * ind[i][col] * (it_aer->second) * (it_aer_scat->second) + special2 * mol_ind * (it_mol->second))
                                 / (special1 * (it_aer->second) * (it_aer_scat->second) + special2 * (it_mol->second));
@@ -655,16 +653,21 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
                             else sum[col] = 0;
                             F[i + 1][col] = sum[col];
                             col++;
-                            if (next_aer->first == next_mol->first) {
-                                it_aer++;
-                                next_aer++;
-                            }
-                            if (next_aer_scat->first == next_mol->first) {
-                                it_aer_scat++;
-                                next_aer_scat++;
-                            }
                             it_mol++;
-                            next_mol++;
+                            if (next_mol != mol_koef_rass.end())
+                            {
+                                next_mol++;
+                                if (next_mol != mol_koef_rass.end()) {
+                                    if (next_aer->first == next_mol->first) {
+                                        it_aer++;
+                                        next_aer++;
+                                    }
+                                    if (next_aer_scat->first == next_mol->first) {
+                                        it_aer_scat++;
+                                        next_aer_scat++;
+                                    }
+                                }
+                            }
                         }
                         it_mol = mol_koef_rass.begin(); next_mol = it_mol; next_mol++;
                         it_aer = koef_osl.begin(); next_aer = it_aer; next_aer++;
@@ -676,7 +679,7 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
         }
 
         if (o == 0) aer_ind_divider = F[N][0];
-        if (o == 1) for (int i = 1; i < 23; i++) mol_ind_dividers[i] = F[N][i];
+        if (o == 1) for (int i = 1; i < 23; i++) mol_ind_divider = F[N][i];
     }
 
     for (int i = 1; i < N+1; i++)
