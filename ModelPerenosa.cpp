@@ -627,45 +627,33 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
                 col = 0;
                 for (int j = 0; j < 5; j++) {
                     H >> read;
+                    
                     if (j == Lnum) {
-                        if (i == N - 1) {
-                            x1 = 0.5 * (mass[i] + mass[i - 1]);
-                            x2 = mass[i];
-                        }
-                        else if (i == 0) {
-                            x1 = 0;
-                            x2 = mass[i];
-                        }
-                        else {
-                            x1 = 0.5 * (mass[i] + mass[i - 1]);
-                            x2 = 0.5 * (mass[i + 1] + mass[i]);
-                        }
-                        mol_ind = abs(pow(x2, 3) + 3 * x2 - pow(x1, 3) - 3 * x1) / 4;
+                        mol_ind = abs(pow(mass[i], 3) + 3 * mass[i] - pow(mass[0], 3) - 3 * mass[0]) / 8; // интегрирование молекулярной индикатрисы рассеяния
                         if (o == 2) mol_ind = mol_ind / mol_ind_divider;
 
                         for (; it_mol != mol_koef_rass.end();) {
                             ind[i][col] = read * 2 * PI;
                             if (o == 2) ind[i][col] = ind[i][col] / aer_ind_divider;
-                            ind[i][col] = (special1 * ind[i][col] * (it_aer->second) * (it_aer_scat->second) + special2 * mol_ind * (it_mol->second))
-                                / (special1 * (it_aer->second) * (it_aer_scat->second) + special2 * (it_mol->second));
-                            if (i!=0)
-                                sum[col] = sum[col] + (ind[i][col] + ind[i - 1][col]) / 2.0 * abs(mass[i] - mass[i - 1]);
+                            if (i != 0) {
+                                sum[col] = sum[col] + (ind[i][col] + ind[i - 1][col]) / 2.0 * abs(mass[i] - mass[i - 1]); // функция распределения для аэрозольного рассеяния
+                                sum[col] = (special1 * sum[col] * (it_aer->second) * (it_aer_scat->second) + special2 * mol_ind * (it_mol->second))
+                                    / (special1 * (it_aer->second) * (it_aer_scat->second) + special2 * (it_mol->second)); // взвешенная с молекулярным рассеянием функция распределения
+                            }
                             else sum[col] = 0;
                             F[i + 1][col] = sum[col];
                             col++;
                             it_mol++;
-                            if (next_mol != mol_koef_rass.end())
+                            if (it_mol != mol_koef_rass.end())
                             {
                                 next_mol++;
-                                if (next_mol != mol_koef_rass.end()) {
-                                    if (next_aer->first == next_mol->first) {
-                                        it_aer++;
-                                        next_aer++;
-                                    }
-                                    if (next_aer_scat->first == next_mol->first) {
-                                        it_aer_scat++;
-                                        next_aer_scat++;
-                                    }
+                                if (next_aer->first == it_mol->first) {
+                                    it_aer++;
+                                    next_aer++;
+                                }
+                                if (next_aer_scat->first == it_mol->first) {
+                                    it_aer_scat++;
+                                    next_aer_scat++;
                                 }
                             }
                         }
@@ -678,8 +666,8 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
             H.close();
         }
 
-        if (o == 0) aer_ind_divider = F[N][0];
-        if (o == 1) for (int i = 1; i < 23; i++) mol_ind_divider = F[N][i];
+        if (o == 0) aer_ind_divider = F[N][0]; // =~ 1.00054
+        if (o == 1) mol_ind_divider = F[N][0]; // = 1.0
     }
 
     for (int i = 1; i < N+1; i++)

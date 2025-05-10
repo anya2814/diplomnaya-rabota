@@ -48,7 +48,7 @@ int main()
     std::cin >> type;
 
     // моделирование процессов переноса
-    for (pp = 1; pp <= 1;) {
+    for (pp = 0.5; pp <= 0.5;) {
         objModel.Modelirovanie(angles, waves, mol_koef_rass, koef_osl, alb_rass, pp, type);
         pp = pp + 0.05;
     }
