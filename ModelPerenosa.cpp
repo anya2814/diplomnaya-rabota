@@ -464,7 +464,7 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
         xyz[i] = 0;
     xyz[2] = 6371;
     int f;
-
+    
     GetIzotr(abc);
 
     for (;;) {
@@ -637,11 +637,18 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
                             if (o == 2) ind[i][col] = ind[i][col] / aer_ind_divider;
                             if (i != 0) {
                                 sum[col] = sum[col] + (ind[i][col] + ind[i - 1][col]) / 2.0 * abs(mass[i] - mass[i - 1]); // функция распределения для аэрозольного рассеяния
-                                sum[col] = (special1 * sum[col] * (it_aer->second) * (it_aer_scat->second) + special2 * mol_ind * (it_mol->second))
+                                if (i == N - 1)
+                                    int hhh = 0;
+                                if (i == 1 && sum[col]!=0)
+                                    int hhh = 0;
+                                F[i + 1][col] = (special1 * sum[col] * (it_aer->second) * (it_aer_scat->second) + special2 * mol_ind * (it_mol->second))
                                     / (special1 * (it_aer->second) * (it_aer_scat->second) + special2 * (it_mol->second)); // взвешенная с молекулярным рассеянием функция распределения
                             }
-                            else sum[col] = 0;
-                            F[i + 1][col] = sum[col];
+                            else {
+                                sum[col] = 0; 
+                                F[i + 1][col] = 0;
+                            }
+                            
                             col++;
                             it_mol++;
                             if (it_mol != mol_koef_rass.end())
@@ -674,7 +681,7 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
         for (int j = 0; j < col; j++)
             F[i][j] = F[i][j] / F[N][j];
 
-    for (int i = 1; i < 23; i++)
+    for (int i = 1; i < N; i++)
         delete[]ind[i];
     delete[]ind;
 
