@@ -11,12 +11,14 @@
 
 static const int N = 204; // число заданных значений F и m в файле
 const double h = 30; // верхняя граница z
-const int kol = 1000000; // количество моделируемых пробегов частиц
+const int kol = 10000000; // количество моделируемых пробегов частиц
 
 class ModelPerenosa
 {
     static double sumUp;
     static double sumLow;
+    static double mLength;
+    static double countLength;
     double GetA();                       // получение случайного числа в интервале от 0 до 1 (равномерное распределение)
     double getMa(float* mass, double** F, int Lnum, double a = ((rand() % 1001) / 1000.));
     double* GetFi(double* fi, double m = 1);            // вспомогательная функция для P1 и P7, нахождение косинуса и синуса для выбора начальной точки и пересчета координат направления пробега
@@ -34,6 +36,7 @@ class ModelPerenosa
 public:
     double GetSumUp();
     double GetSumLow();
+    double GetMlength();
     void SetSum0();
     void CountK(int* t);
     int ModPer(float* mass, double** F, int Lnum, double** d, double pp);

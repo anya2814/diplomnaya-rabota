@@ -9,6 +9,8 @@ double ModelPerenosa::GetA() {
 
 double ModelPerenosa::sumUp = 0;
 double ModelPerenosa::sumLow = 0;
+double ModelPerenosa::mLength = 0;
+double ModelPerenosa::countLength = 0;
 
 // вспомогательная функция для P6
 // выбор значения косинуса угла рассеяния m
@@ -47,6 +49,11 @@ double* ModelPerenosa::GetFi(double* fi, double m) {
     w1 = 1; w2 = 1;
 
     return fi;
+}
+
+double ModelPerenosa::GetMlength()
+{
+    return mLength/countLength;
 }
 
 // учет пересечений верхней площадки с весом 1/|(ns, w)|
@@ -134,7 +141,11 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
     }
     ln_prev = -log(a);
 
-    if (c == 0) return (ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
+    if (c == 0) {  // если частица летит горизонтально
+        countLength++;
+        mLength = mLength + ln_prev / d[Lnum][curr_ht];
+        return (ln_prev / d[Lnum][curr_ht]);
+    }; 
 
     if (c < 0) {
         // первый слой
@@ -142,15 +153,27 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
         ln_new = ln_prev - l * d[Lnum][curr_ht];
         l_sum += l;
 
-        if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
+        if (ln_new <= 0) { 
+            countLength++;
+            mLength = mLength + ln_prev / d[Lnum][curr_ht];
+            return (ln_prev / d[Lnum][curr_ht]);
+        };
 
         if (curr_ht == 0) {
             if (b <= pp) {
-                abc = GetLambert(abc);
+                abc[2] = -abc[2];
                 c = abc[2];
-                if (c == 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
+                if (c == 0) { // если частица летит горизонтально
+                    countLength++;
+                    mLength = mLength + l_sum + ln_prev / d[Lnum][curr_ht];
+                    return (l_sum + ln_prev / d[Lnum][curr_ht]);
+                }  
             }
-            else return(-2); // произошло поглощение частицы поверхностью Земли
+            else { // произошло поглощение частицы поверхностью Земли
+                countLength++;
+                mLength = mLength + l_sum;
+                return(-2);
+            }   
         }
         else {
             curr_ht--;
@@ -158,8 +181,11 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
                 ln_prev = ln_new;
                 l = 1 / abs(c);
                 ln_new = ln_prev - l * d[Lnum][curr_ht];
-                if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
-
+                if (ln_new <= 0) {
+                    countLength++;
+                    mLength = mLength + l_sum + ln_prev / d[Lnum][curr_ht];
+                    return (l_sum + ln_prev / d[Lnum][curr_ht]);
+                }
                 l_sum += l;
                 curr_ht--;
             }
@@ -167,9 +193,17 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
                 abc = GetLambert(abc);
                 c = abc[2]; 
                 b = GetA();
-                if (c == 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);  // если частица летит горизонтально
+                if (c == 0) { // если частица летит горизонтально
+                    countLength++;
+                    mLength = mLength + l_sum + ln_prev / d[Lnum][curr_ht];
+                    return (l_sum + ln_prev / d[Lnum][curr_ht]);
+                };
             }
-            else return(-2); // произошло поглощение частицы поверхностью Земли
+            else { 
+                countLength++;
+                mLength = mLength + l_sum;
+                return(-2); // произошло поглощение частицы поверхностью Земли
+            }
         }
     }
 
@@ -177,9 +211,17 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
         // первый слой
         l = ((curr_ht * 1.0 + 1) - z) / c;
         if (d[Lnum][curr_ht] < 0.00000001)
+        {
+            countLength++;
+            mLength = mLength + abs((30 - z)/c);
             return -1;
+        };
         ln_new = ln_prev - l * d[Lnum][curr_ht];
-        if (ln_new <= 0) return (ln_prev / d[Lnum][curr_ht]);
+        if (ln_new <= 0) {
+            countLength++;
+            mLength = mLength + ln_prev / d[Lnum][curr_ht];
+            return (ln_prev / d[Lnum][curr_ht]);
+        };
         l_sum += l;
         curr_ht++;
     }
@@ -188,9 +230,18 @@ double ModelPerenosa::P2length(int Lnum, double** d, double z, double* abc, doub
         ln_prev = ln_new;
         l = 1 / c;
         if (d[Lnum][curr_ht] < 0.00000001)
+        {
+            countLength++;
+            mLength = mLength + abs((30 - z) / c);
             return -1;
+        };
         ln_new = ln_prev - l * d[Lnum][curr_ht];
-        if (ln_new <= 0) return (l_sum + ln_prev / d[Lnum][curr_ht]);
+        if (ln_new <= 0) 
+        {
+            countLength++;
+            mLength = mLength + l_sum + ln_prev / d[Lnum][curr_ht];
+            return (l_sum + ln_prev / d[Lnum][curr_ht]);
+        }; 
 
         l_sum += l;
         curr_ht++;
@@ -269,7 +320,7 @@ int ModelPerenosa::ModPer(float* mass, double** F, int Lnum, double** d, double 
         xyz[i] = 0;
 
     abc = GetIzotr(abc);
-
+    abc[2] = 0.999999; abc[1] = sqrt(1 - abc[2] * abc[2]); abc[0] = 0;
     for (;;) {
         for (int i = 0; i < 3; i++)
             abc_prev[i] = abc[i];
@@ -329,6 +380,7 @@ void ModelPerenosa::CountK(int* t)
     std::cout << "Коэффициент вылета через нижнюю границу: k1 = " << t[0] / (kol * 1.0) << std::endl;
     std::cout << "Коэффициент вылета через верхнюю границу: k2 = " << t[1] / (kol * 1.0) << std::endl;
     std::cout << "Коэффициент поглощений: k3 = " << t[2] / (kol * 1.0) << std::endl;
+    std::cout << "Средняя длина свободного пробега на высоте до 30 км: mLength = " << GetMlength() << std::endl;
 }
 
 // вывод результатов в файл
@@ -355,6 +407,8 @@ void ModelPerenosa::Modelirovanie(float* mass, double** F, double* waves, double
     for (int i = 0; i < 5; i++)
     {
         SetSum0();
+        mLength = 0;
+        countLength = 0;
         std::cout << "Данные для длины волны l=" << waves[i] << " мкм: " << std::endl << std::endl;
         t = NModPer(t, mass, F, i, d, pp);
         std::cout << "Произошло " << t[0] << " поглощений частиц поверхностью Земли. " << std::endl;

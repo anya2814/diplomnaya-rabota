@@ -30,7 +30,7 @@ int main()
     // моделирование процессов переноса
     for (double pp = 1; pp <= 1;) {
         objModel.Modelirovanie(mass, F, waves, d, pp);
-        pp = pp + 0.05;
+        pp = pp + 0.5;
     }
 
     delete[]mass;
