@@ -50,7 +50,7 @@ int main()
     // моделирование процессов переноса
     for (pp = 0; pp <= 1.01;) {
         objModel.Modelirovanie(angles, waves, mol_koef_rass, koef_osl, alb_rass, pp, type);
-        pp = pp + 0.05;
+        pp = pp + 0.5;
     }
 
     // освобождение памяти

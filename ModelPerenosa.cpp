@@ -404,9 +404,9 @@ bool ModelPerenosa::P5type(int Lnum, std::vector<std::map<int, double>>& mol_koe
         else break;
     }
 
-    std::map<int, double>::iterator mol = alb_rass[Lnum].begin();
+    std::map<int, double>::iterator mol = mol_koef_rass[Lnum].begin();
     auto next_mol = mol; next_mol++;
-    for (; mol != alb_rass[Lnum].end();) {
+    for (; mol != mol_koef_rass[Lnum].end();) {
         if (curr_ht > next_mol->first) {
             mol++; next_mol++;
         }
@@ -467,7 +467,7 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
     
     GetIzotr(abc);
 
-    for (;;) {
+        for (;;) {
         f = P2length(Lnum, mol_koef_rass, koef_osl, xyz, abc, pp, type);
 
         if (f == -1)
