@@ -61,9 +61,9 @@ double ModelPerenosa::GetWeight(double* xyz, double* abc) {
 }
 
 // учет пересечений верхней площадки с весом 1/|(ns, w)|
-void ModelPerenosa::CrossUp(double* xyz, double* abc)
+void ModelPerenosa::CrossUp(double* xyz, double* abc, double molConsWeight)
 {
-    sumUp = sumUp + 1.0 / (kol * GetWeight(xyz, abc));
+    sumUp = sumUp + 1.0 / (kol * GetWeight(xyz, abc)); // * exp(-molConsWeight * ModelPerenosa::tauMolPath /100);
 }
 
 double ModelPerenosa::GetSumUp()
@@ -72,9 +72,9 @@ double ModelPerenosa::GetSumUp()
 }
 
 // учет пересечений нижней площадки с весом 1/|(ns, w)|
-void ModelPerenosa::CrossLow(double* xyz, double* abc)
+void ModelPerenosa::CrossLow(double* xyz, double* abc, double molConsWeight)
 {
-    sumLow = sumLow + 1.0 / (kol * GetWeight(xyz, abc));
+    sumLow = sumLow + 1.0 / (kol * GetWeight(xyz, abc)); // *exp(-molConsWeight * ModelPerenosa::tauMolPath / 100);
 }
 
 double ModelPerenosa::GetSumLow()
@@ -128,12 +128,13 @@ void ModelPerenosa::GetIzotr(double* abc) {
 
 // НОВАЯ ФУНКЦИЯ выбор длины свободного пробега l + проверка вылета из среды 
 // вычисление координат очередной точки столкновения
-int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, double* xyz, double* abc, double pp, int type) {
-    double ht = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371;
+int ModelPerenosa::P2length(int Lnum, double lambda_um, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, double* xyz, double* abc, double pp, int type) {
+    double ht = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371, ht_something;
     double j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371;
 
     std::map<int, double>::iterator curr_ht_ko; // слой в котором находится частица для коэффициента ослабления  
                                                 // (0 - 0-3 км, 1 - 3-13 км, 2 - 13-25 км, 3 - 25-35 км, 4 - 35-100 км, где ко = 0)
+
     for (auto it = koef_osl[Lnum].begin(); it != koef_osl[Lnum].end(); it++) {
         if (ht >= it->first) curr_ht_ko = it; // указатель на std::pair где находится текущий коэффициент ослабления    
     }
@@ -142,6 +143,8 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_ko
     for (auto it = mol_koef_rass[Lnum].begin(); it != mol_koef_rass[Lnum].end(); it++) {
         if (ht >= it->first) curr_ht_mol = it; // указатель на std::pair где находится текущий коэффициент молекулярного рассеяния
     }
+
+    const KDistData* kdAbs = GetMolAbsForWave(lambda_um); // <<< таблица поглощения для этой λ
 
     double a = 0, R, l_opt;//, l_real = 0;    
     double c = abc[2];          // косинус угла к поверхности Земли
@@ -165,11 +168,17 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_ko
                 t.second = l_opt / (curr_ht_mol->second + curr_ht_ko->second);
             else l_opt = l_opt - t.second * (curr_ht_mol->second + curr_ht_ko->second);
             //l_real = l_real + t;    // реальная длина пробега
-            if ((sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371) < -0.01)
-                j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]);
+
+            // ht_something соответствует высоте в середине участка
+            double xmid = xyz[0] + 0.5 * abc[0] * t.second;
+            double ymid = xyz[1] + 0.5 * abc[1] * t.second;
+            double zmid = xyz[2] + 0.5 * abc[2] * t.second;
+            ht_something = std::sqrt(xmid * xmid + ymid * ymid + zmid * zmid) - 6371.0;
+            AccumulateMolAbsTau(kdAbs, ht_something, t.second);
             xyz[0] = xyz[0] + abc[0] * t.second; // координаты пересечения со сферой
             xyz[1] = xyz[1] + abc[1] * t.second;
             xyz[2] = xyz[2] + abc[2] * t.second;
+
             if (temp <= 0) {
                 Cout_xyz(xyz); return 1;
             }
@@ -204,9 +213,18 @@ int ModelPerenosa::P2length(int Lnum, std::vector<std::map<int, double>>& mol_ko
         temp = l_opt - t.second * (curr_ht_mol->second + curr_ht_ko->second);
         if (temp <= 0) t.second = l_opt / (curr_ht_mol->second + curr_ht_ko->second);
         else l_opt = l_opt - t.second * (curr_ht_mol->second + curr_ht_ko->second);
+
+        // ht_something соответствует высоте в середине участка
+        double xmid = xyz[0] + 0.5 * abc[0] * t.second;
+        double ymid = xyz[1] + 0.5 * abc[1] * t.second;
+        double zmid = xyz[2] + 0.5 * abc[2] * t.second;
+        ht_something = std::sqrt(xmid * xmid + ymid * ymid + zmid * zmid) - 6371.0;
+        AccumulateMolAbsTau(kdAbs, ht_something, t.second);
+
         xyz[0] = xyz[0] + abc[0] * t.second; // координаты пересечения со сферой
         xyz[1] = xyz[1] + abc[1] * t.second;
         xyz[2] = xyz[2] + abc[2] * t.second;
+
         if (sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]) - 6371 < -0.01)
             j = sqrt(xyz[2] * xyz[2] + xyz[1] * xyz[1] + xyz[0] * xyz[0]);
         if (temp <= 0) {
@@ -384,7 +402,8 @@ std::pair<int,double> ModelPerenosa::GetTequat(double* xyz, double* abc, double 
 // выбор типа столкновения (поглощение или рассеяние)
 bool ModelPerenosa::P5type(int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double* xyz) {
     double a = GetA();
-    int curr_ht = xyz[2] - 6371, curr_ht_pos = -1;
+    int curr_ht = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]) - 6371.0; 
+    int curr_ht_pos = -1;
 
     std::map<int, double>::iterator pr = alb_rass[Lnum].begin();
     auto next_pr = pr; next_pr++;
@@ -455,7 +474,7 @@ void ModelPerenosa::Cout_xyz(double* xyz) {
 }
 
 // функция для моделирования процесса переноса
-int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type) {
+int ModelPerenosa::ModPer(float* angles, double lambda_um, double** F, int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& mol_cons, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type) {
     
     double* abc = new double[3], * xyz = new double[3];
     for (int i = 0; i < 3; i++)
@@ -463,17 +482,21 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
     for (int i = 0; i < 2; i++)
         xyz[i] = 0;
     xyz[2] = 6371;
+
+    for (int m = 0; m < 4; m++)
+        tauMolPath[m] = 0;
     int f;
     
     GetIzotr(abc);
 
         for (;;) {
-        f = P2length(Lnum, mol_koef_rass, koef_osl, xyz, abc, pp, type);
+        f = P2length(Lnum, lambda_um, mol_koef_rass, koef_osl, xyz, abc, pp, type);
 
         if (f == -1)
         {
             // Произошел вылет за пределы среды через верхнюю границу
-            CrossUp(xyz, abc);
+            double W = MolAbsWeight(lambda_um);
+            sumUp = sumUp + W * (1.0 / (kol * GetWeight(xyz, abc)));
             delete[]abc;
             delete[]xyz;
             return 1;
@@ -483,7 +506,8 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
         if (f == -2)
         {
             // Произошло поглощение частицы поверхностью Земли
-            CrossLow(xyz, abc);
+            double W = MolAbsWeight(lambda_um);
+            sumLow = sumLow + W * (1.0 / (kol * GetWeight(xyz, abc)));
             delete[]abc;
             delete[]xyz;
             return 0;
@@ -502,13 +526,13 @@ int ModelPerenosa::ModPer(float* angles, double** F, int Lnum, std::vector<std::
 
 }
 
-int* ModelPerenosa::NModPer(int* t, float* angles, double** F, int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type)
+int* ModelPerenosa::NModPer(int* t, double lambda_um, float* angles, double** F, int Lnum, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& mol_cons, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type)
 {
     int k, j;
     for (int i = 0; i < 3; i++)
         t[i] = 0;
     for (int i = 0; i < kol; i++) {
-        k = ModPer(angles, F, Lnum, mol_koef_rass, koef_osl, alb_rass, pp, type);
+        k = ModPer(angles, lambda_um, F, Lnum, mol_koef_rass, mol_cons, koef_osl, alb_rass, pp, type);
         t[k]++;
     }
 
@@ -537,7 +561,7 @@ void ModelPerenosa::OutToFile(double** tBig, double* waves, double pp)
     }
 }
 
-void ModelPerenosa::Modelirovanie(float* angles, double* waves, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type)
+void ModelPerenosa::Modelirovanie(float* angles, double* waves, std::vector<std::map<int, double>>& mol_koef_rass, std::vector<std::map<int, double>>& mol_cons, std::vector<std::map<int, double>>& koef_osl, std::vector<std::map<int, double>>& alb_rass, double pp, int type)
 {
     int* t = new int[3];
     double** tBig = new double* [5];
@@ -552,7 +576,7 @@ void ModelPerenosa::Modelirovanie(float* angles, double* waves, std::vector<std:
         SetSum0();
         F = getF(F, angles, i, mol_koef_rass[i], koef_osl[i], alb_rass[i]);      // функция распределения угла рассеяния
         std::cout << "Данные для длины волны l=" << waves[i] << " мкм: " << std::endl << std::endl;
-        t = NModPer(t, angles, F, i, mol_koef_rass, koef_osl, alb_rass, pp, type);
+        t = NModPer(t, waves[i], angles, F, i, mol_koef_rass, mol_cons, koef_osl, alb_rass, pp, type);
         /*std::cout << "Произошло " << t[0] << " поглощений частиц поверхностью Земли. " << std::endl;
         std::cout << "Произошло " << t[1] << " вылетов за пределы среды через верхнюю границу. " << std::endl;
         std::cout << "Произошло " << t[2] << " поглощений. " << std::endl;*/
@@ -587,8 +611,8 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
 {
     double** ind = new double* [N];
     for (int i = 0; i < N; i++)
-        ind[i] = new double[23];
-    double sum[23], mol_ind, x1, x2; // x1, x2 - границы интегрирования молекулярной индикатрисы
+        ind[i] = new double[24];
+    double sum[24], mol_ind, x1, x2; // x1, x2 - границы интегрирования молекулярной индикатрисы
     double one = 1;
     double mol_ind_divider, aer_ind_divider;
 
@@ -686,4 +710,92 @@ double** ModelPerenosa::getF(double** F, float* mass, int Lnum, std::map<int, do
     delete[]ind;
 
     return F;
+}
+
+const KDistData* ModelPerenosa::GetMolAbsForWave(double lambda_um) const
+{
+    if (molAbsByLambda.empty()) return nullptr;
+
+    auto it = molAbsByLambda.lower_bound(lambda_um);
+
+    if (it == molAbsByLambda.begin()) return &it->second;
+    if (it == molAbsByLambda.end()) return &std::prev(it)->second;
+
+    // между двумя — берём ближайшую
+    auto itR = it;
+    auto itL = std::prev(it);
+    if (std::abs(itR->first - lambda_um) < std::abs(lambda_um - itL->first)) return &itR->second;
+    return &itL->second;
+}
+
+double ModelPerenosa::MolAbsWeight(double lambda_um) const
+{
+    const KDistData* kd = GetMolAbsForWave(lambda_um);
+    if (!kd) return 1.0; // если нет данных — не ослабляем
+
+    double W = 0.0;
+    for (int m = 0; m < 4; ++m) {
+        W += kd->Ci[m] * std::exp(-tauMolPath[m]);
+    }
+    return W;
+}
+
+void ModelPerenosa::AccumulateMolAbsTau(const KDistData* kdAbs, double ht_km, double ds_km)
+{
+    if (!kdAbs) return;
+    if (kdAbs->k_layers.empty() || kdAbs->k_layers[0].empty()) return;
+
+    // ищем слой как ты хочешь: последняя граница <= ht
+    auto curr = kdAbs->k_layers[0].begin();
+    for (auto it = kdAbs->k_layers[0].begin(); it != kdAbs->k_layers[0].end(); ++it) {
+        if (ht_km >= it->first) curr = it;
+    }
+    int z_key = curr->first;
+
+    for (int m = 0; m < 4; ++m) {
+        auto itK = kdAbs->k_layers[m].find(z_key);
+        if (itK != kdAbs->k_layers[m].end()) {
+            tauMolPath[m] += ds_km * itK->second; // τ += k * ds
+        }
+    }
+}
+
+//---------------------Чтение и интерполяция индикатрисы-----------------------
+bool ModelPerenosa::ReadIndicatrix(const std::string& filename, IndicatrixTable& tab)
+{
+    std::ifstream in(filename);
+    if (!in.is_open()) return false;
+
+    tab.lambda_um.assign(5, 0.0);
+    for (int j = 0; j < 5; ++j) in >> tab.lambda_um[j];
+
+    tab.theta_deg.clear();
+    tab.mu.clear();
+    tab.P.assign(5, std::vector<double>());
+
+    double theta = 0.0;
+    double v[5];
+
+    while (in >> theta >> v[0] >> v[1] >> v[2] >> v[3] >> v[4]) {
+        tab.theta_deg.push_back(theta);
+        double mu = std::cos(theta * PI / 180.0);
+        tab.mu.push_back(mu);
+        for (int j = 0; j < 5; ++j) tab.P[j].push_back(v[j]);
+    }
+    return !tab.mu.empty();
+}
+
+static inline double lerp(double a, double b, double t) { return a + (b - a) * t; }
+
+static double ModelPerenosa::InterpByLambda(double lambda_um, const std::vector<double>& lam, const double p_at_lam[5])
+{
+    if (lambda_um <= lam[0]) return p_at_lam[0];
+    if (lambda_um >= lam[4]) return p_at_lam[4];
+
+    int R = 1;
+    while (R < 5 && lam[R] < lambda_um) ++R;
+    int L = R - 1;
+
+    double t = (lambda_um - lam[L]) / (lam[R] - lam[L]);
+    return lerp(p_at_lam[L], p_at_lam[R], t);
 }
